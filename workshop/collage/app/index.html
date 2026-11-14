@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>コラージュ</title>
+<script>
+  window.WS_STEP = {
+    title: '<ruby>防災行動<rt>ぼうさいこうどう</rt></ruby>をコラージュで<ruby>表<rt>あらわ</rt></ruby>そう',
+    flow: { current: 3 },
+    prev: '../../marbling/app/index.html',
+    next: '../../message/artwork/artwork_submit.html',   // 授業案 rev3：コラージュの記録（S6）はなくした
+    mapUrl: '../../map/app/detail/index.html',
+    frameSave: 'WS_flushSave',
+    editNext: '../../message/lastconfirm/final_submit.html'
+  };
+</script>
+<link rel="stylesheet" href="../../common/styles.css?v=yagami4" />
+</head>
+<body>
+<main class="stage">
+  <div class="frame-wrap">
+    <iframe data-ws-work src="./detail/index.html?v=yagami6" allow="fullscreen" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </div>
+</main>
+<script src="../../common/progress.js?v=yagami4"></script>
+<script src="../../common/nav.js?v=yagami5"></script>
+<script>
+  // マーブリングを作り直したあと（?compose=1）：新しいマーブリングにスタンプをのせて作品画像を作り直し、確認画面へもどる
+  (function () {
+    if (!/[?&]compose=1(&|$)/.test(location.search)) return;
+    var RETURN = '../../message/lastconfirm/final_submit.html';
+    var ov = document.createElement('div');
+    ov.className = 'ws-compose-overlay';
+    ov.innerHTML = '<ruby>作品<rt>さくひん</rt></ruby>を<ruby>仕上<rt>しあ</rt></ruby>げています…<br><ruby>少<rt>すこ</rt></ruby>し<ruby>待<rt>ま</rt></ruby>ってください';
+    document.body.appendChild(ov);
+    var fr = document.querySelector('iframe[data-ws-work]');
+    var t0 = Date.now();
+    (function wait() {
+      var w = fr && fr.contentWindow, ready = false;
+      try { ready = !!(w && w.WS_isReady); } catch (e) {}
+      if (!ready && Date.now() - t0 < 10000) return setTimeout(wait, 150);
+      var p = Promise.resolve();
+      try { if (w && typeof w.WS_flushSave === 'function') p = Promise.resolve(w.WS_flushSave()); } catch (e) {}
+      Promise.race([p, new Promise(function (r) { setTimeout(r, 4000); })]).then(function () { location.replace(RETURN); });
+    })();
+  })();
+</script>
+</body>
+</html>

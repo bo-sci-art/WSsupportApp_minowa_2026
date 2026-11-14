@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>コラージュ</title>
+  <link rel="stylesheet" href="./styles.css?v=yagami6" />
+</head>
+<body>
+    <aside>
+    <div class="row">
+      <label class="kid-label">スタンプを<ruby>選<rt>えら</rt></ruby>んで、<ruby>絵<rt>え</rt></ruby>をタッチしよう</label>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+
+    <div class="row kid-actions">
+      <button id="undoBtn" type="button" class="kid-btn">↶ ひとつもどす</button>
+      <button id="flipXBtn" type="button" class="kid-btn">⇆ はんてん</button>
+      <button id="deleteSelectedBtn" type="button" class="kid-btn danger"><ruby>選<rt>えら</rt></ruby>んだスタンプをけす</button>
+      <button id="clearAllBtn" type="button" class="kid-btn warning">スタンプをぜんぶけす</button>
+    </div>
+
+    <div class="row" id="colorRow">
+      <label class="kid-label"><span><ruby>色<rt>いろ</rt></ruby>をかえる</span></label>
+      <input id="color" type="color" value="#ffffff" hidden aria-hidden="true" />
+      <div class="swatches" id="swatches" role="listbox" aria-label="色"></div>
+    </div>
+
+    <div class="row" id="alphaRow">
+      <label class="kid-label" for="alpha"><span>スタンプの<ruby>濃<rt>こ</rt></ruby>さ</span></label>
+      <div class="alpha-slider">
+        <span class="alpha-end">うすく</span>
+        <input id="alpha" type="range" min="0.2" max="1" step="0.01" value="0.68" aria-label="スタンプの濃さ（左でうすく、右でこく）" />
+        <span class="alpha-end">こく</span>
+      </div>
+      <p class="alpha-hint"><ruby>選<rt>えら</rt></ruby>んだスタンプの<ruby>濃<rt>こ</rt></ruby>さが<ruby>変<rt>か</rt></ruby>わるよ</p>
+    </div>
+  </aside>
+
+  <main>
+    <div id="stageWrap">
+      <canvas id="stage" width="1200" height="800"></canvas>
+      <div id="trashZone" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+          <path d="M3 6h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </main>
+  <script src="./app.js?v=yagami6" defer></script>
+</body>
+</html>

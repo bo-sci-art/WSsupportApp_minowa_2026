@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>確認して登録</title>
+    <link rel="stylesheet" href="./final_submit_styles.css?v=yagami5">
+</head>
+<body>
+    <div class="s8">
+        <header class="s8-head">
+            <span class="s8-step">4 メッセージ</span>
+            <h1 class="s8-title">確認{かくにん}して、マップに登録{とうろく}しよう</h1>
+        </header>
+
+        <main class="s8-main">
+            <section class="s8-art">
+                <div class="s8-art-frame">
+                    <img id="artwork-preview-img" alt="あなたの作品" style="display:none;">
+                    <div id="artwork-preview-empty" class="s8-art-empty">作品{さくひん}を読{よ}み込{こ}んでいます…</div>
+                </div>
+                <div class="s8-redo">
+                    <button type="button" class="s8-btn ghost" onclick="redoWork('marblingApp')">🎨 マーブリングを作{つく}り直{なお}す</button>
+                    <button type="button" class="s8-btn ghost" onclick="redoWork('collageApp')">✂️ コラージュを作{つく}り直{なお}す</button>
+                </div>
+            </section>
+
+            <section class="s8-list" id="summaryList">
+                <!-- 項目は script で作る（タイトル・伝えたいこと・いつの行動か・番号・場所・災害） -->
+            </section>
+        </main>
+
+        <footer class="s8-foot">
+            <div id="submit-status" class="s8-status" style="display:none;"></div>
+            <div class="s8-foot-btns">
+                <button class="s8-btn ghost big" type="button" id="btn-back">◀ もどる</button>
+                <button class="s8-btn primary big" type="button" id="btn-submit-artwork">📤 登録{とうろく}する</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 登録できたとき -->
+    <div class="s8-done" id="step-complete" style="display:none;">
+        <div class="s8-done-card">
+            <div class="s8-done-icon">🎉</div>
+            <h2 class="s8-done-title">防災行動{ぼうさいこうどう}マップに登録{とうろく}できました！</h2>
+            <p class="s8-done-msg">防災行動{ぼうさいこうどう}マップで、自分{じぶん}の作品{さくひん}を見{み}てみよう。</p>
+            <div class="s8-foot-btns">
+                <button class="s8-btn success big" onclick="goToMap()" id="btn-goto-map" type="button">🗺️ 防災行動{ぼうさいこうどう}マップを見{み}る ▶</button>
+            </div>
+            <p class="s8-download-note" id="download-note" style="display:none;"></p>
+        </div>
+    </div>
+
+    <script src="../../common/config.js?v=yagami4"></script>
+    <script src="../../common/progress.js?v=yagami4"></script>
+    <script src="../../common/places.js?v=yagami4"></script>
+    <script src="../../common/ruby.js?v=yagami4"></script>
+    <script src="./final_submit_script.js?v=yagami6"></script>
+</body>
+</html>

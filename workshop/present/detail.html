@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja" data-ruby="first">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>矢上小防災行動マップ</title>
+  <link rel="stylesheet" href="./leaflet.css">
+  <link rel="stylesheet" href="detail_style.css?v=yagami11">
+</head>
+<body class="dv">
+
+  <!-- 使い方（はじめて開いたとき・？ボタン） -->
+  <div id="detail-tutorial-overlay" class="tutorial-overlay" style="display: none;">
+    <div class="tutorial-card dv-tutorial">
+      <div class="tutorial-image-container dv-tutorial-img"><img id="dt-img" alt="作品ページの使い方の写真" class="tutorial-img"></div>
+      <div class="tutorial-content">
+        <h3 id="dt-title">タイトル</h3>
+        <p id="dt-desc">説明文</p>
+      </div>
+      <div class="tutorial-footer">
+        <span class="tutorial-spacer" aria-hidden="true"></span>
+        <div class="tutorial-dots">
+          <span class="dt-dot active"></span>
+          <span class="dt-dot"></span>
+          <span class="dt-dot"></span>
+        </div>
+        <button type="button" id="dt-next-btn" class="tutorial-nav-btn primary">つぎへ ＞</button>
+      </div>
+    </div>
+  </div>
+
+  <header id="global-header">
+    <div class="header-left">
+      <div class="header-logo-icon">🗺️</div>
+      <div class="header-titles">
+        <h1 class="header-main-title">矢上小{やがみしょう}防災行動{ぼうさいこうどう}マップ</h1>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-item no-ruby">鑑賞済み <span id="view-count"></span></div>
+      <button type="button" id="detail-help-btn">？</button>
+      <button type="button" id="back-to-map-btn">＜ マップに戻{もど}る</button>
+    </div>
+  </header>
+
+  <!-- 作品を1画面で見せる（右側はスクロールしない）：作品｜タイトル・伝えたいこと・作品の情報・この場所の危険性 -->
+  <main class="dv-main">
+    <section class="dv-art">
+      <div class="dv-art-frame"><img id="art-image" src="" alt="作品"></div>
+    </section>
+
+    <section class="dv-info">
+      <div class="dv-card dv-card-title">
+        <h2 class="dv-title" id="art-title" data-user-text>…</h2>
+      </div>
+
+      <div class="dv-card dv-card-body" id="body-card">
+        <div class="dv-card-head">💬 この作品{さくひん}で伝{つた}えたいこと</div>
+        <p class="dv-body" id="art-body" data-user-text>…</p>
+      </div>
+
+      <div class="dv-card dv-card-facts">
+        <div class="dv-card-head">📋 作品{さくひん}の情報{じょうほう}</div>
+        <dl class="dv-facts">
+          <dt>📍 場所{ばしょ}</dt><dd id="art-place">…</dd>
+          <dt>⚠️ 災害{さいがい}</dt><dd id="art-hazards">…</dd>
+          <dt>⏱️ いつの行動{こうどう}</dt><dd id="art-phase">…</dd>
+          <dt>👤 作者{さくしゃ}</dt><dd class="dv-num" id="art-number">…</dd>
+        </dl>
+      </div>
+
+      <div class="dv-card dv-card-map">
+        <div class="dv-card-head">🗺️ この場所{ばしょ}の危険性{きけんせい}を見{み}る</div>
+        <div class="dv-hz-chips" id="hz-chips"></div>
+        <div id="surrounding-map" class="dv-map"></div>
+      </div>
+
+      <div class="dv-nav">
+        <button type="button" class="dv-nav-btn" id="prev-btn">◀ 前{まえ}の作品{さくひん}</button>
+        <span class="dv-nav-pos" id="nav-pos"></span>
+        <button type="button" class="dv-nav-btn primary" id="next-btn">次{つぎ}の作品{さくひん} ▶</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="./leaflet.js"></script>
+  <script src="../common/config.js?v=yagami4"></script>
+  <script src="../common/places.js?v=yagami4"></script>
+  <script src="../common/ruby.js?v=yagami4"></script>
+  <script src="./detail_script.js?v=yagami13"></script>
+</body>
+</html>

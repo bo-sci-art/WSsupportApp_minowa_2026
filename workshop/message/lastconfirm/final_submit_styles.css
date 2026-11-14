@@ -1,0 +1,66 @@
+/* =========================================================
+   S8 確認して登録（矢上小版・授業案 rev3）
+   1画面に収め、スクロールしないで「登録する」を押せるようにする
+   ========================================================= */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  color: #1f2937; background: #f7f6f2; overflow: hidden;
+}
+/* ふりがなが漢字より長くても、漢字の間をあけない */
+ruby { display: inline-block; position: relative; text-indent: 0; }
+ruby rt { position: absolute; left: 50%; top: calc(50% - 2.05em); transform: translateX(-50%); font-size: .55em; line-height: 1; white-space: nowrap; letter-spacing: 0; text-align: center; pointer-events: none; }
+
+.s8 { height: 100%; display: flex; flex-direction: column; padding: 10px clamp(12px, 2vw, 24px) 12px; gap: 10px; }
+.s8-head { flex: none; display: flex; align-items: center; gap: 14px; }
+.s8-step { background: #4f8b80; color: #fff; font-weight: 800; font-size: .95rem; border-radius: 999px; padding: 2px 14px; line-height: 2; white-space: nowrap; }
+.s8-title { font-size: clamp(1.3rem, 2.6vw, 1.7rem); margin: 0; line-height: 2.1; }
+
+.s8-main { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(10px, 1.6vw, 20px); }
+.s8-art { min-height: 0; display: flex; flex-direction: column; gap: 10px; background: #fff; border-radius: 18px; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.s8-art-frame { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(#f3f4f6 0 25%, #fff 0 50%) 0 0 / 20px 20px; border-radius: 12px; overflow: hidden; }
+.s8-art-frame img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.s8-art-empty { display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; font-size: 1.05rem; line-height: 2.1; color: #6b7280; }
+.s8-redo { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.s8-list { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 6px; background: #fff; border-radius: 18px; padding: 8px 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+.s8-row { display: grid; grid-template-columns: 6.2em minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 4px 4px; border-bottom: 1px solid #eef0f2; min-height: 54px; }
+.s8-row:last-child { border-bottom: 0; }
+.s8-row-label { font-weight: 800; font-size: 1rem; color: #4b5563; line-height: 2.1; }
+.s8-row-value { font-size: 1.05rem; line-height: 2.1; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; word-break: break-all; }
+.s8-row.empty .s8-row-value { color: #b91c1c; font-weight: 700; }
+.s8-v-title { font-size: 1.2rem; font-weight: 800; }
+.s8-v-num { font-size: 1.25rem; font-weight: 800; letter-spacing: .15em; font-variant-numeric: tabular-nums; }
+.s8-tag { display: inline-block; background: #ecf6f4; color: #1f5a50; border-radius: 999px; padding: 0 12px; margin: 2px 6px 2px 0; font-weight: 700; font-size: .98rem; line-height: 2.2; }
+.s8-edit { appearance: none; border: 2px solid #d1d5db; background: #fff; border-radius: 999px; padding: 4px 14px; font-size: .98rem; font-weight: 800; color: #374151; cursor: pointer; line-height: 2.1; white-space: nowrap; font-family: inherit; }
+
+.s8-foot { flex: none; display: flex; flex-direction: column; gap: 6px; }
+.s8-foot-btns { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.s8-btn { appearance: none; cursor: pointer; border-radius: 999px; font-weight: 800; font-family: inherit; line-height: 2.1; font-size: 1rem; padding: 6px 16px; border: 2px solid #d1d5db; background: #fff; color: #374151; }
+.s8-btn.big { font-size: 1.3rem; padding: 8px 34px; min-height: 60px; }
+.s8-btn.primary { background: #4f8b80; border-color: #4f8b80; color: #fff; box-shadow: 0 6px 18px rgba(79,139,128,.35); }
+.s8-btn.primary:disabled { opacity: .7; cursor: default; }
+.s8-btn.success { background: #1f8a3b; border-color: #1f8a3b; color: #fff; }
+.s8-status { text-align: center; font-size: 1.05rem; font-weight: 700; line-height: 2.1; border-radius: 12px; padding: 2px 12px; }
+.s8-status.info { background: #eff6ff; color: #1e40af; }
+.s8-status.error { background: #fef2f2; color: #b91c1c; }
+
+/* 登録できたとき */
+.s8-done { position: fixed; inset: 0; z-index: 50; background: rgba(247,246,242,.97); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.s8-done-card { width: min(760px, 100%); background: #fff; border: 3px solid #1f8a3b; border-radius: 24px; padding: 28px 24px; text-align: center; }
+.s8-done-icon { font-size: 3rem; line-height: 1.4; }
+.s8-done-title { color: #1f8a3b; font-size: clamp(1.4rem, 3.4vw, 2rem); margin: 6px 0 10px; line-height: 2.1; }
+.s8-done-msg { font-size: 1.15rem; line-height: 2.2; margin: 0 0 18px; }
+.s8-download-note { margin: 14px 0 0; color: #1f8a3b; font-weight: 700; line-height: 2.1; }
+
+/* 縦向き：作品を上、一覧を下に */
+@media (orientation: portrait) {
+  .s8-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 0.85fr) auto; }
+  .s8-list { overflow: hidden; }
+}
+
+/* 確認の一覧：「自分の担当の場所」「読み取ったハザードマップ」が入る幅 */
+.s8-row { grid-template-columns: 8.4em minmax(0, 1fr) auto; }
+.s8-row-label { line-height: 1.9; padding-top: 6px; }
+.s8-download-note.error { color: #b91c1c; }
