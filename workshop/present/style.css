@@ -917,3 +917,6 @@ ruby rt { font-size: .5em; font-weight: 400; color: inherit; opacity: .72; }
 
 /* 使い方：閉じる（つぎへ）ボタンは右の1つだけ */
 .tutorial-spacer { display: inline-block; width: 1px; }
+/* 箕輪小版：「その他」の作品のピン（作品ごと・押すとその作品のページ） */
+.other-work-pin { background: none; border: 0; }
+.other-work-pin span { --pc: #6b7280; display: block; width: 16px; height: 16px; margin: 0; border-radius: 50%; background: var(--pc); border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.45); cursor: pointer; }

@@ -48,7 +48,7 @@
       <div class="btns"><button class="start" id="startBtn" type="button">はじめる ▶</button></div>
     </div>
 
-    <!-- 途中のデータがあるとき（1コマ目のつづき・休み時間のあとなど） -->
+    <!-- 途中のデータがあるとき（休み時間のあと・iPad を閉じたあとなど） -->
     <div id="viewResume" hidden>
       <p class="lead">「つづきから」をおしてね。</p>
       <div class="btns">
@@ -71,15 +71,13 @@
 <script src="../common/config.js?v=minowa4"></script>
 <script>
   // 「さいしょから」を押したときだけ、前の人の作品データを消す（共有のiPadでも真っさらから始められるように）
-  // ※ページを開いただけでは消さない。1コマ目と2コマ目のあいだはデータを残し、「つづきから」で再開する
-  var FIRST_URL = "../map/app/index.html";
+  // ※ページを開いただけでは消さない。休み時間のあとなどのためにデータを残し、「つづきから」で再開する
+  var FIRST_URL = "../map/Log/log_hazard_map.html";
   var LS_KEYS = ["minowa_hazardMapLog","minowa_marblingLog","minowa_collageLog","minowa_artworkSubmit","minowa_artworkImage","minowa_artworkImageExt",
                  "minowa_pendingArtworkSubmitPayload","minowa_lastSubmittedArtworkId","minowa_artworkSavedId","minowa_lastColorHex","minowa_paletteName","minowa_wsResumePage"];
   var IDB_KEYS = ["latest_marbling_base","collage_stamps","artwork_image"];
   var PAGE_NAMES = {
-    "map/app/index.html": "ハザードマップ",
-    "map/Log/log_hazard_map.html": "場所{ばしょ}と災害{さいがい}を選{えら}ぶ画面{がめん}",
-    "map/Log/break.html": "マーブリング",
+    "map/Log/log_hazard_map.html": "場所{ばしょ}を選{えら}ぶ画面{がめん}",
     "marbling/app/index.html": "マーブリング",
     "collage/app/index.html": "コラージュ",
     "message/artwork/artwork_submit.html": "タイトルを書{か}く画面{がめん}",
@@ -128,8 +126,7 @@
 
   document.getElementById("startBtn").addEventListener("click", function () { startFresh(this); });
   document.getElementById("resumeBtn").addEventListener("click", function () {
-    var page = resume && PAGE_NAMES[resume] ? resume : "map/app/index.html";
-    if (page === "map/Log/break.html") page = "marbling/app/index.html";   // 休み時間のあとは、マーブリングから
+    var page = resume && PAGE_NAMES[resume] ? resume : "map/Log/log_hazard_map.html";
     location.href = "../" + page;
   });
   document.getElementById("restartBtn").addEventListener("click", function () {

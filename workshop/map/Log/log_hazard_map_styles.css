@@ -508,3 +508,45 @@ body {
   color: #1f2937; box-shadow: 0 1px 3px rgba(0,0,0,.3); pointer-events: none;
 }
 .place-marker.selected .pm-label { font-size: 15px; background: #fff; outline: 2px solid #1f2937; }
+
+/* ===== 箕輪小版：6つから選ぶ（固定5か所＋その他）・「その他」は地図にピンを置く ===== */
+.place-buttons { grid-template-columns: 1fr; gap: 8px; }
+.place-btn { min-height: 58px; padding: 6px 14px; }
+.place-btn .place-name { display: block; }
+.place-btn .place-sub { margin-left: 12px; font-size: .9rem; font-weight: 700; color: #4b5563; }
+.place-btn.other { border-style: dashed; }
+.place-btn.other.selected { border-style: solid; }
+.place-map-section { gap: 8px; }
+.map-instruction { position: static; transform: none; box-shadow: none; background: none; padding: 0 2px; margin: 0; font-weight: 800; color: #1f2937; z-index: auto; }
+.map-instruction.picking { color: #b91c1c; }
+.map-instruction .area-word { color: #dc2626; }
+.place-map-container { position: relative; }
+#map.picking { cursor: crosshair; }
+.map-toast {
+  position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 1000;
+  background: #b91c1c; color: #fff; font-weight: 800; font-size: 1.1rem; line-height: 2.2;
+  padding: 2px 20px; border-radius: 999px; box-shadow: 0 4px 14px rgba(0,0,0,.3); white-space: nowrap; pointer-events: none;
+}
+.map-toast[hidden] { display: none; }
+/* 「その他」のピン（しずく形） */
+.other-pin { background: none; border: 0; }
+.other-pin .op-head {
+  position: absolute; left: 3px; top: 0; width: 28px; height: 28px; background: #dc2626;
+  border: 3px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.45);
+}
+.other-pin .op-head::after { content: ""; position: absolute; left: 8px; top: 8px; width: 9px; height: 9px; border-radius: 50%; background: #fff; }
+/* 「ここでいいかな？」 */
+.pin-confirm { position: fixed; inset: 0; z-index: 5000; background: rgba(17,24,39,.55); display: grid; place-items: center; padding: 16px; }
+.pin-confirm[hidden] { display: none; }
+.pin-confirm-card { width: min(640px, 100%); background: #fff; border-radius: 24px; padding: 20px 22px; box-shadow: 0 20px 60px rgba(0,0,0,.3); display: flex; flex-direction: column; gap: 14px; }
+.pin-confirm-title { margin: 0; text-align: center; font-size: 1.8rem; color: #166534; line-height: 1.8; }
+.pin-confirm-map { height: min(46vh, 380px); border-radius: 14px; border: 2px solid #d1d5db; }
+.pin-confirm-btns { display: flex; gap: 14px; justify-content: center; }
+.pin-confirm-btns button { flex: 1 1 0; min-height: 60px; font-size: 1.25rem; font-weight: 800; }
+/* 縦向き：ボタンを2列にして地図の高さを確保 */
+@media screen and (max-width: 1024px) {
+  .place-buttons { grid-template-columns: 1fr 1fr; }
+}
+@media screen and (min-width: 900px) and (max-width: 1024px) and (orientation: landscape) {
+  .place-buttons { grid-template-columns: 1fr; }
+}

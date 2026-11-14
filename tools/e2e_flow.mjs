@@ -78,14 +78,19 @@ async function shot(page, run, name) {
 }
 
 async function flow(label, viewport, placeId, number) {
-  const run = { label, viewport, n: 1, shots: [], pages: [], steps: [], errors: [], checks: {} };
+  const run = { label, viewport, n: 1, shots: [], pages: [], steps: [], errors: [], checks: {}, yagamiRequests: [], workerHosts: new Set() };
   report.runs.push(run);
   const step = (s) => { run.steps.push(s); console.log(`[${label}] ${s}`); };
 
   const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, acceptDownloads: true, locale: "ja-JP" });
   let page = await ctx.newPage();
-  const watch = (p) => { p.on("pageerror", e => run.errors.push(`${p.url().replace(APP, "")}: ${e.message}`)); p.on("dialog", d => d.accept()); };
+  const watch = (p) => {
+    p.on("pageerror", e => run.errors.push(`${p.url().replace(APP, "")}: ${e.message}`));
+    p.on("dialog", d => d.accept());
+    // 矢上小版の Worker・画像に1回もアクセスしないこと（読み込みも書き込みも）
+    p.on("request", r => { const u = r.url(); if (/yagami/i.test(u)) run.yagamiRequests.push(r.method() + " " + u); if (/workers.dev|127.0.0.1:8787/.test(u)) run.workerHosts.add(new URL(u).host); });
+  };
   watch(page);
 
   // S0 はじめる（データがないので「はじめる」だけが出る）
@@ -94,34 +99,50 @@ async function flow(label, viewport, placeId, number) {
   await shot(page, run, "S0_start");
   await page.click("#startBtn");
 
-  // S1 ハザードマップを見る（3か所の目印）
-  await page.waitForURL(/map\/app/);
-  const mapFrame = page.frameLocator("iframe[data-ws-work]");
-  await mapFrame.locator("#chk-flood_l2").check();
-  await mapFrame.locator("#chk-kyukei").check();
-  run.checks.s1Places = await mapFrame.locator(".place-marker").count();
-  await shot(page, run, "S1_hazardmap");
-  step(`S1 ハザードマップ：洪水・土砂災害を表示、場所の目印 ${run.checks.s1Places} 個`);
-  await page.click("#nextBtn");
-
-  // S2 場所（3つのボタン）と災害
+  // S1 場所（6つのボタン：固定5か所＋その他）
   await page.waitForURL(/map\/Log\/log_hazard_map/);
-  run.checks.s2Buttons = await page.locator(".place-btn").count();
-  run.checks.s2Hazards = await page.locator(".hazard-option").count();
-  await page.click(`.place-btn[data-place="${placeId}"]`);
-  await page.locator(".hazard-option").nth(0).click();
-  await page.locator(".hazard-option").nth(3).click();
   await page.waitForTimeout(800);
-  await shot(page, run, "S2_place");
-  step(`S2 場所：ボタン ${run.checks.s2Buttons} 個から ${placeId} を選択、災害の選択肢 ${run.checks.s2Hazards} 個`);
+  run.checks.s1Buttons = await page.locator(".place-btn").count();
+  run.checks.s1Markers = await page.locator(".place-marker").count();
+  run.checks.s1Stepper = (await page.locator(".step-indicator").innerText()).replace(/\s+/g, "");
+  await shot(page, run, "S1_place_empty");
+  await page.click(`.place-btn[data-place="${placeId}"]`);
+  await page.waitForTimeout(800);
+  if (placeId === "other") {
+    // 「つぎへ」はピンを置くまで押せない
+    run.checks.otherNextBlocked = await page.locator("#nextBtn").isDisabled();
+    // 枠の外をタップ → 置けない（注意が出る）
+    await page.evaluate(() => state.map.fire("click", { latlng: L.latLng(35.60, 139.70) }));
+    await page.waitForTimeout(300);
+    run.checks.outOfAreaBlocked = (await page.locator("#mapToast").isVisible()) && !(await page.locator("#pinConfirm").isVisible());
+    await shot(page, run, "S1_other_outside");
+    // 地図のまん中（枠の中）をタップ → 「ここでいいかな？」
+    const mb = await page.locator("#map").boundingBox();
+    await page.mouse.click(mb.x + mb.width * 0.55, mb.y + mb.height * 0.5);
+    await page.waitForSelector("#pinConfirm", { state: "visible", timeout: 5000 });
+    await page.waitForTimeout(1200);
+    run.checks.confirmTitle = (await page.locator("#pinConfirmTitle").innerText()).trim();
+    await shot(page, run, "S1_other_confirm");
+    // 「置き直す」→ もう一度タップ →「ここにする」
+    await page.click("#pinRetryBtn");
+    await page.mouse.click(mb.x + mb.width * 0.45, mb.y + mb.height * 0.45);
+    await page.waitForSelector("#pinConfirm", { state: "visible", timeout: 5000 });
+    await page.waitForTimeout(800);
+    await page.click("#pinOkBtn");
+    await page.waitForTimeout(800);
+    run.pin = await page.evaluate(() => JSON.parse(localStorage.getItem("minowa_hazardMapLog") || "{}").location);
+    run.checks.otherPinShown = await page.locator("#map .other-pin").count();
+  } else {
+    run.pin = await page.evaluate(() => JSON.parse(localStorage.getItem("minowa_hazardMapLog") || "{}").location);
+  }
+  await shot(page, run, "S1_place");
+  step(`S1 場所：ボタン ${run.checks.s1Buttons} 個・地図の目印 ${run.checks.s1Markers} 個から ${placeId} を選択 → ${JSON.stringify(run.pin)}` +
+    (placeId === "other" ? `（ピン前は進めない=${run.checks.otherNextBlocked}、枠の外は置けない=${run.checks.outOfAreaBlocked}、確認「${run.checks.confirmTitle}」）` : ""));
   await page.click("#nextBtn");
 
-  // 1コマ目はここまで
-  await page.waitForURL(/map\/Log\/break/);
-  await shot(page, run, "S2b_break");
-  step("1コマ目はここまで：画面が出た");
-
-  // 休み時間：タブを閉じて開き直す → 「つづきから」
+  // 休み時間：タブを閉じて開き直す → 「つづきから」（「1コマ目はここまで」の画面はなくした）
+  await page.waitForURL(/marbling\/app/);
+  await page.waitForTimeout(1000);
   await page.close();
   page = await ctx.newPage();
   watch(page);
@@ -133,7 +154,9 @@ async function flow(label, viewport, placeId, number) {
   await page.waitForURL(/marbling\/app/);
   const savedPlace = await page.evaluate(() => (JSON.parse(localStorage.getItem("minowa_hazardMapLog") || "{}").location || {}).place);
   run.checks.resumeOK = savedPlace === placeId;
-  step(`つづきから：タブを閉じて開き直し → マーブリングから再開（${run.checks.resumeWhere}）、場所 ${savedPlace}`);
+  run.checks.marblingStepper = await page.evaluate(() => [...document.querySelectorAll(".ws-stepper__label")].map(e => { const c = e.cloneNode(true); c.querySelectorAll("rt").forEach(x => x.remove()); return c.textContent; }).join("/"));
+  run.checks.marblingMapBtn = await page.locator("#mapBtn").count();
+  step(`つづきから：タブを閉じて開き直し → マーブリングから再開（${run.checks.resumeWhere}）、場所 ${savedPlace}、ステップ表示 ${run.checks.marblingStepper}`);
 
   // S3 マーブリング
   await page.waitForTimeout(1500);
@@ -293,7 +316,9 @@ async function flow(label, viewport, placeId, number) {
   step(`開き直したあとの保存の回数：${downloads} 回（1回なら二重に保存していない）`);
   const saved = await fetch(`${WORKER}/artworks`).then(r => r.json());
   const mine = saved.features.find(f => f.properties.id === id);
-  run.checks.savedFields = mine && { place: mine.properties.place, number: mine.properties.field_25, phase: mine.properties.field_23, body: !!mine.properties.Body, lat: mine.geometry.coordinates[1] };
+  run.checks.savedFields = mine && { place: mine.properties.place, number: mine.properties.field_25, phase: mine.properties.field_23, body: !!mine.properties.Body, field_24: mine.properties.field_24, lat: mine.geometry.coordinates[1], lon: mine.geometry.coordinates[0], image: (mine.properties.images || [])[0] };
+  run.checks.savedLatLonOK = !!mine && Math.abs(mine.geometry.coordinates[1] - run.pin.lat) < 1e-6 && Math.abs(mine.geometry.coordinates[0] - run.pin.lon) < 1e-6;
+  run.checks.imageServed = !!(mine && mine.properties.images[0]) && (await fetch(`${WORKER}/${mine.properties.images[0]}`)).status === 200;
   step(`保存された値：${JSON.stringify(run.checks.savedFields)}`);
 
   // S9 防災行動マップ（自分の場所が開く）
@@ -315,8 +340,11 @@ async function flow(label, viewport, placeId, number) {
   await page.waitForTimeout(1200);
   run.checks.mapPlaceActive = await page.locator(`.place-tab.active[data-place="${placeId}"]`).count() === 1;
   run.checks.placePins = await page.locator(".place-pin").count();
+  run.checks.placeTabs = await page.locator(".place-tab").count();
+  run.checks.otherWorkPins = await page.locator(".other-work-pin").count();
+  run.checks.cardPlace = (await page.locator(`#card-${id} .art-place`).innerText()).replace(/\s+/g, "");
   await shot(page, run, "S9_present");
-  step(`S9 マップ：作品 ${id} が ${placeId} の一覧に表示、場所のピン ${run.checks.placePins} 個`);
+  step(`S9 マップ：作品 ${id} が ${placeId} の一覧に表示（場所の表示「${run.checks.cardPlace}」）、場所のピン ${run.checks.placePins} 個、その他のピン ${run.checks.otherWorkPins} 個、場所のボタン ${run.checks.placeTabs} 個`);
   await page.fill("#art-search", number);
   await page.waitForTimeout(400);
   run.checks.search = await page.evaluate(([id, num]) => { const cards = [...document.querySelectorAll(".art-card")]; return { count: cards.length, hasMine: cards.some(c => c.id === "card-" + id), allMatch: cards.every(c => (c.querySelector(".art-num") || {}).textContent === num) }; }, [id, number]);
@@ -326,19 +354,25 @@ async function flow(label, viewport, placeId, number) {
   await page.waitForURL(/detail\.html/);
   await page.waitForTimeout(1500);
   await shot(page, run, "S9b_detail_tutorial");
-  const skip = page.locator("#dt-skip-btn");
-  if (await skip.isVisible()) await skip.click();
+  // 作品ページの使い方（3ページ）を「つぎへ」で最後まで進めて閉じる
+  for (let k = 0; k < 4 && await page.locator("#detail-tutorial-overlay").isVisible(); k++) { await page.click("#dt-next-btn"); await page.waitForTimeout(300); }
   await page.waitForTimeout(800);
-  run.checks.detail = { number: await page.locator("#art-number").innerText(), body: (await page.locator("#art-body").innerText()).length > 0 };
+  run.checks.detail = {
+    number: await page.locator("#art-number").innerText(),
+    body: (await page.locator("#art-body").innerText()).length > 0,
+    place: (await page.locator("#art-place").innerText()).replace(/\s+/g, ""),
+    hazardRowHidden: !(await page.locator("#art-hazards").isVisible()),
+    navVisible: await page.evaluate(() => getComputedStyle(document.getElementById("next-btn")).visibility !== "hidden"),
+    hzChip: await page.locator(".dv-hz-chip").count()
+  };
   await shot(page, run, "S9c_detail");
-  step(`作品ページ：番号 ${run.checks.detail.number}、伝えたいこと ${run.checks.detail.body ? "あり" : "なし"}`);
-
-  // マーブリング中・コラージュ中の「ハザードマップ」パネル
-  await page.goto(`${APP}/workshop/collage/app/index.html`);
-  await page.waitForTimeout(1500);
-  await page.click("#mapBtn");
-  await page.waitForTimeout(1500);
-  await shot(page, run, "S5c_collage_mappanel");
+  if (run.checks.detail.hzChip) {
+    await page.click(".dv-hz-chip");
+    await page.waitForTimeout(2000);
+    run.checks.detail.hzOn = await page.locator(".dv-hz-chip.on").count() === 1;
+    await shot(page, run, "S9d_detail_hazard");
+  }
+  step(`作品ページ：番号 ${run.checks.detail.number}、場所「${run.checks.detail.place}」、伝えたいこと ${run.checks.detail.body ? "あり" : "なし"}、災害の行を隠す=${run.checks.detail.hazardRowHidden}、次の作品ボタン=${run.checks.detail.navVisible ? "あり" : "なし"}、ハザードマップを重ねる=${run.checks.detail.hzOn}`);
 
   // テスト作品を削除
   const del = await fetch(`${WORKER}/artworks/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + ADMIN_KEY } }).then(r => r.json());
@@ -348,6 +382,7 @@ async function flow(label, viewport, placeId, number) {
 
   await browser.close();
   delete run.n;
+  run.workerHosts = [...run.workerHosts];
 }
 
 // 同じ場所に10件登録して、マップから10件とも開けるか
@@ -358,8 +393,8 @@ async function samePlaceTen() {
   const img = "data:image/jpeg;base64," + Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString("base64");
   for (let i = 0; i < 10; i++) {
     const r = await fetch(`${WORKER}/submit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-      secret: "minowa-ws-2026", lat: 35.55112, lon: 139.65574, imageBase64: img, imageExt: "jpg",
-      properties: { field_23: "事前", field_24: "洪水（外水氾濫）", field_25: String(4211 + i), Message: `${tag} #${i + 1}`, Body: "テスト", place: "hiyoshi5" } }) }).then(r => r.json());
+      secret: "minowa-ws-2026", lat: 35.54195, lon: 139.641434, imageBase64: img, imageExt: "jpg",
+      properties: { field_23: "事前", field_24: null, field_25: String(4611 + i), Message: `${tag} #${i + 1}`, Body: "テスト", place: "apita" } }) }).then(r => r.json());
     if (r.ok) t.ids.push(r.id);
   }
   const browser = await chromium.launch();
@@ -368,12 +403,12 @@ async function samePlaceTen() {
   // 手元の Worker を使うように覚えさせる（スタート画面の ?worker= と同じしくみ）
   await page.goto(`${APP}/workshop/start/index.html?worker=${encodeURIComponent(WORKER)}`);
   await page.evaluate(() => localStorage.setItem("minowa_has_seen_map_tutorial_rev3", "true"));
-  await page.goto(`${APP}/workshop/present/index.html?place=hiyoshi5`);
+  await page.goto(`${APP}/workshop/present/index.html?place=apita`);
   await page.waitForSelector(`#card-${t.ids[0]}`, { timeout: 15000 });
   t.listed = await page.locator(".art-card").count();
   await page.screenshot({ path: path.join(OUT, "same_place_10_list.png") });
   for (const id of t.ids) {
-    await page.goto(`${APP}/workshop/present/index.html?place=hiyoshi5`);
+    await page.goto(`${APP}/workshop/present/index.html?place=apita`);
     await page.waitForSelector(`#card-${id}`, { timeout: 15000 });
     await page.click(`#card-${id}`);
     await page.waitForURL(/detail\.html/);
@@ -388,8 +423,9 @@ async function samePlaceTen() {
   console.log(`[同じ場所に10件] 登録 ${t.ids.length} 件、一覧に ${t.listed} 件、マップから開けた作品 ${t.opened} 件 → ${t.ok ? "OK" : "NG"}（テスト作品は削除）`);
 }
 
-await flow("landscape", { width: 1180, height: 820 }, "kagami", "4201");
-await flow("portrait", { width: 820, height: 1180 }, "minowa", "4228");
+// 横向き：固定の地点（綱島駅）、縦向き：「その他」（地図にピンを置く）
+await flow("landscape", { width: 1180, height: 820 }, "tsunashima", "4601");
+await flow("portrait", { width: 820, height: 1180 }, "other", "4640");
 await samePlaceTen();
 
 fs.writeFileSync(path.resolve("tools/out/report.json"), JSON.stringify(report, null, 2));
@@ -397,17 +433,29 @@ const problems = [];
 if (!report.samePlace.ok) problems.push("同じ場所に10件：全部開けない");
 for (const r of report.runs) {
   const c = r.checks;
+  const other = r.label === "portrait";
   if (r.errors.length) problems.push(`[${r.label}] JSエラー: ${r.errors.join(" / ")}`);
+  if (r.yagamiRequests.length) problems.push(`[${r.label}] 矢上小版へのアクセスがある: ${r.yagamiRequests.join(" / ")}`);
+  if (r.workerHosts.some(h => !/^(minowa-submit\.kazuki131214\.workers\.dev|127\.0\.0\.1:8787)$/.test(h))) problems.push(`[${r.label}] 箕輪小版以外の Worker にアクセスした: ${r.workerHosts.join(", ")}`);
   if (!r.deleted) problems.push(`[${r.label}] 削除できていない`);
-  if (c.s1Places !== 3) problems.push(`[${r.label}] S1 の場所の目印が3つでない`);
-  if (c.s2Buttons !== 3 || c.s2Hazards !== 4) problems.push(`[${r.label}] S2 のボタン・選択肢の数がおかしい`);
+  if (c.s1Buttons !== 6 || c.s1Markers !== 5) problems.push(`[${r.label}] S1 のボタン（6つ）・地図の目印（5つ）の数がおかしい ${c.s1Buttons}/${c.s1Markers}`);
+  if (!/^1場所/.test(c.s1Stepper)) problems.push(`[${r.label}] S1 のステップ表示がおかしい ${c.s1Stepper}`);
+  if (c.marblingStepper !== "場所/マーブリング/コラージュ/メッセージ") problems.push(`[${r.label}] ステップ表示がおかしい ${c.marblingStepper}`);
+  if (c.marblingMapBtn !== 0) problems.push(`[${r.label}] マーブリングに「ハザードマップ」ボタンが残っている`);
+  if (other) {
+    if (!c.otherNextBlocked) problems.push(`[${r.label}] その他：ピンを置く前に進めてしまう`);
+    if (!c.outOfAreaBlocked) problems.push(`[${r.label}] その他：枠の外にピンを置けてしまう`);
+    if (c.confirmTitle !== "ここでいいかな？") problems.push(`[${r.label}] その他：確認の画面が出ない（${c.confirmTitle}）`);
+    if (!r.pin || r.pin.place !== "other" || !(r.pin.lat > 35.525 && r.pin.lat < 35.565)) problems.push(`[${r.label}] その他：ピンの位置が保存されない ${JSON.stringify(r.pin)}`);
+    if (c.otherPinShown !== 1) problems.push(`[${r.label}] その他：地図にピンが出ない`);
+  }
   if (!c.resumeOK) problems.push(`[${r.label}] つづきから再開できない`);
   if (r.restore.stampsAfter !== r.restore.stampsBefore) problems.push(`[${r.label}] スタンプが復元されない`);
   if (!c.alpha || !c.alpha.slider || c.alpha.after !== 1 || !(c.alpha.light < 0.4)) problems.push(`[${r.label}] 濃さのレバーが効かない ${JSON.stringify(c.alpha)}`);
   if (c.alphaKept !== 1) problems.push(`[${r.label}] 濃さが保存されない（もどったあと ${c.alphaKept}）`);
   if (!c.badNumberBlocked) problems.push(`[${r.label}] 4けたでない番号で進めてしまう`);
   if (c.numberInputmode !== "numeric") problems.push(`[${r.label}] 番号で数字キーボードが出ない`);
-  if (c.s8.scroll > 0 || !c.s8.submitVisible || c.s8.rows !== 6 || c.s8.empty) problems.push(`[${r.label}] S8 が1画面に収まらない／未入力あり ${JSON.stringify(c.s8)}`);
+  if (c.s8.scroll > 0 || !c.s8.submitVisible || c.s8.rows !== 5 || c.s8.empty) problems.push(`[${r.label}] S8 が1画面に収まらない／未入力あり ${JSON.stringify(c.s8)}`);
   if (!/修正/.test(c.editLabel) || !c.editBack) problems.push(`[${r.label}] 「直す」から確認画面にもどれない`);
   if (r.redo) {
     if (r.redo.editUI.back || !/修正/.test(r.redo.editUI.next) || !r.redo.editUI.badge) problems.push(`[${r.label}] 修正用の画面のボタンがおかしい ${JSON.stringify(r.redo.editUI)}`);
@@ -416,12 +464,18 @@ for (const r of report.runs) {
     if (!r.redo.collageUpdated || r.redo.stampsAfterCollageRedo !== r.redo.stampsAfterMarblingRedo + 1) problems.push(`[${r.label}] コラージュの作り直しが反映されない`);
   }
   const sf = c.savedFields || {};
-  if (!sf.body || !/^42\d\d$/.test(sf.number || "") || !sf.place || sf.phase !== "災害時") problems.push(`[${r.label}] 保存された値がおかしい ${JSON.stringify(sf)}`);
+  if (!sf.body || !/^46\d\d$/.test(sf.number || "") || sf.place !== (other ? "other" : "tsunashima") || sf.phase !== "災害時") problems.push(`[${r.label}] 保存された値がおかしい ${JSON.stringify(sf)}`);
+  if (!c.savedLatLonOK) problems.push(`[${r.label}] 保存された緯度経度が選んだ地点とちがう ${JSON.stringify(sf)} / ${JSON.stringify(r.pin)}`);
+  if (!c.imageServed) problems.push(`[${r.label}] R2 の画像が読めない`);
   if (!c.guide || c.guide.filter(Boolean).length !== 4 || !c.guideClosed) problems.push(`[${r.label}] マップの使い方の写真が出ない／閉じない ${JSON.stringify(c.guide)}`);
-  if (c.saveButton !== 0 || !/^minowa_\d+_42\d\d\.jpg$/.test(r.download || "") || c.downloads !== 1) problems.push(`[${r.label}] 登録したときの自動保存がおかしい（保存ボタン ${c.saveButton}、ファイル ${r.download}、保存 ${c.downloads} 回）`);
+  if (c.saveButton !== 0 || !/^minowa_\d+_46\d\d\.jpg$/.test(r.download || "") || c.downloads !== 1) problems.push(`[${r.label}] 登録したときの自動保存がおかしい（保存ボタン ${c.saveButton}、ファイル ${r.download}、保存 ${c.downloads} 回）`);
   if (c.guideButtons !== 1) problems.push(`[${r.label}] マップの使い方のボタンが ${c.guideButtons} 個（1つにする）`);
-  if (!c.mapPlaceActive || c.placePins !== 3) problems.push(`[${r.label}] マップで自分の場所が開かない／ピンが3つでない`);
+  if (!c.mapPlaceActive || c.placePins !== 5 || c.placeTabs !== 7) problems.push(`[${r.label}] マップで自分の場所が開かない／ピン5つ・ボタン7つでない（${c.placePins}/${c.placeTabs}）`);
+  if (other && (c.otherWorkPins < 1 || !String(c.cardPlace).includes("その他"))) problems.push(`[${r.label}] その他の作品がマップに出ない／「その他」と出ない（${c.otherWorkPins}／${c.cardPlace}）`);
   if (!c.search.hasMine || !c.search.allMatch) problems.push(`[${r.label}] 番号で探す結果がおかしい ${JSON.stringify(c.search)}`);
+  const d = c.detail || {};
+  if (other ? (!String(d.place).includes("その他") || d.navVisible) : !String(d.place).includes("綱島駅")) problems.push(`[${r.label}] 作品ページの場所・次の作品がおかしい ${JSON.stringify(d)}`);
+  if (!d.hazardRowHidden || !d.hzOn) problems.push(`[${r.label}] 作品ページのハザードマップの表示がおかしい ${JSON.stringify(d)}`);
   for (const p of r.pages) for (const f of p.frames) {
     if (f.noRuby.length) problems.push(`[${r.label}] ${p.name} ${f.url}: ルビなし ${JSON.stringify(f.noRuby)}`);
     if (f.hOverflow > 0) problems.push(`[${r.label}] ${p.name} ${f.url}: 横にはみ出し ${f.hOverflow}px`);

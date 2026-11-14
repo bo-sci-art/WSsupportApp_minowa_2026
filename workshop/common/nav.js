@@ -15,7 +15,7 @@
   // 確認画面の「作り直す」から開いたとき：「修正完了」だけを出し、保存して確認画面へもどる
   var EDIT = /[?&]edit=1(&|$)/.test(location.search) && !!S.editNext;
   if (EDIT) { S.prev = null; S.next = S.editNext; S.nextLabel = '✓ <ruby>修正完了<rt>しゅうせいかんりょう</rt></ruby>'; }
-  var LABELS = ['ハザードマップ', 'マーブリング', 'コラージュ', 'メッセージ'];
+  var LABELS = ['<ruby>場所<rt>ばしょ</rt></ruby>', 'マーブリング', 'コラージュ', 'メッセージ'];
 
   var header = document.createElement('header');
   header.className = 'ws-header';

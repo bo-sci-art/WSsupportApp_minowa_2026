@@ -1,7 +1,7 @@
-// 28件（4年2組の人数）の作品を同時に登録して、全件が登録されるかを確かめるテスト
+// N件（初期値 40件：4年6組の番号 4601〜4640 の数）の作品を同時に登録して、全件が登録されるかを確かめるテスト
 //
 // 使い方（Node.js 18 以上）:
-//   node tools/load_test_30.mjs <WorkerのURL> <ADMIN_KEY> [件数=28]
+//   node tools/load_test_30.mjs <WorkerのURL> <ADMIN_KEY> [件数=40]
 //   例）node tools/load_test_30.mjs https://minowa-submit.kazuki131214.workers.dev XXXXXXXX
 //
 // 流れ:
@@ -15,17 +15,21 @@
 const [, , base0, adminKey, n0] = process.argv.filter(a => a !== "--keep");
 const KEEP = process.argv.includes("--keep");
 if (!base0 || !adminKey) {
-  console.error("使い方: node tools/load_test_30.mjs <WorkerのURL> <ADMIN_KEY> [件数=28] [--keep]");
+  console.error("使い方: node tools/load_test_30.mjs <WorkerのURL> <ADMIN_KEY> [件数=40] [--keep]");
   process.exit(1);
 }
 const BASE = base0.replace(/\/+$/, "");
-const N = Math.min(28, Number(n0 || 28));   // 番号は 4201〜4228 なので最大28件
-// 授業案 rev3：場所は3か所（座標は固定）。28件を 10・9・9 に分ける
+const N = Math.min(40, Number(n0 || 40));   // 番号は 4601〜4640 なので最大40件
+// 箕輪小版：固定5か所＋「その他」（その他は綱島・日吉周辺のばらばらの座標）に順に割り振る
 const PLACES = [
-  { id: "hiyoshi5", lat: 35.55112, lon: 139.65574 },
-  { id: "kagami",   lat: 35.54543, lon: 139.65512 },
-  { id: "minowa",   lat: 35.55400, lon: 139.65763 }
+  { id: "apita",        lat: 35.54195,    lon: 139.641434 },
+  { id: "tsunashima",   lat: 35.53674,    lon: 139.63468 },
+  { id: "conforte",     lat: 35.546082,   lon: 139.634018 },
+  { id: "hiyoshinooka", lat: 35.548008,   lon: 139.642441 },
+  { id: "pump",         lat: 35.53960528, lon: 139.65348008 },
+  { id: "other",        lat: 35.5450,     lon: 139.6450 }
 ];
+const placeOf = i => { const p = PLACES[i % PLACES.length]; return p.id === "other" ? { ...p, lat: +(p.lat + (i % 7) * 0.001).toFixed(6), lon: +(p.lon - (i % 5) * 0.001).toFixed(6) } : p; };
 const SECRET = process.env.SUBMIT_SECRET || "minowa-ws-2026";
 
 // 約200KB のダミー画像（JPEG の先頭・末尾つき。中身はランダム）
@@ -51,16 +55,16 @@ const t0 = Date.now();
 const results = await Promise.all(Array.from({ length: N }, async (_, i) => {
   const payload = {
     secret: SECRET,
-    lat: PLACES[i % 3].lat,
-    lon: PLACES[i % 3].lon,
+    lat: placeOf(i).lat,
+    lon: placeOf(i).lon,
     properties: {
       field_23: ["事前", "災害時", "復旧時"][i % 3],
-      field_24: "洪水（外水氾濫）, 土砂災害（急傾斜地の崩壊）",
-      field_25: String(4201 + i),
+      field_24: null,
+      field_25: String(4601 + i),
       Message: `${tag} #${i + 1} 大雨のときは早めに高いところへ！`,
       Body: "大雨で川があふれそうなときは、家族といっしょに早めに高い場所へ避難してほしいです。",
-      place: PLACES[i % 3].id,
-      creationDate: "2026-11-18"
+      place: placeOf(i).id,
+      creationDate: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)
     },
     imageBase64: dummyJpegDataURL(i),
     imageExt: "jpg"

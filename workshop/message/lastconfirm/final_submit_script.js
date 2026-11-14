@@ -6,9 +6,10 @@
  * - Message  : 作品のタイトル
  * - Body     : この作品で伝えたいこと
  * - field_23 : いつの行動か（事前／災害時／復旧時）
- * - field_24 : 読み取ったハザードマップ（カンマ区切り）
- * - field_25 : 作者の番号（4201〜4228）
- * - place    : 場所（hiyoshi5 / kagami / minowa）、lat / lon はその場所の固定の座標
+ * - field_24 : 使わない（箕輪小版はハザードマップを選ばない。空のまま送る）
+ * - field_25 : 作者の番号（4601〜4640）
+ * - place    : 地点の種類（apita / tsunashima / conforte / hiyoshinooka / pump / other）
+ *   lat / lon : 固定5か所はその場所の固定の座標、other は児童が地図に置いたピンの座標
  * - Mabling・collage は使わない（空のまま）
  * 作品画像：localStorage.artworkImage（コラージュの自動保存で作られる）
  */
@@ -29,14 +30,7 @@ const CONFIG = {
 };
 function workerBase() { return ((window.MINOWA_CONFIG && window.MINOWA_CONFIG.WORKER_URL) || CONFIG.WORKER_URL).replace(/\/+$/, ''); }
 
-const HAZARD_LABELS = {
-    '洪水（外水氾濫）': '洪水{こうずい}（外水氾濫{がいすいはんらん}）',
-    '高潮': '高潮{たかしお}',
-    '土砂災害（急傾斜地の崩壊）': '土砂{どしゃ}災害{さいがい}（急傾斜地{きゅうけいしゃち}の崩壊{ほうかい}）',
-    '地震の揺れ（震度）': '地震{じしん}の揺{ゆ}れ（震度{しんど}）'
-};
-
-let appData = { hazards: [], location: null, art: {} };
+let appData = { location: null, art: {} };
 let isSubmitting = false;
 
 function readJSON(k) { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } }
@@ -45,9 +39,20 @@ function rb(s) { return window.rubyHTML ? window.rubyHTML(s) : s; }
 
 function loadData() {
     const h = readJSON('minowa_hazardMapLog');
-    appData.hazards = Array.isArray(h.hazards) ? h.hazards : [];
-    appData.location = h.location || null;
+    appData.location = validLocation(h.location) ? h.location : null;
     appData.art = readJSON('minowa_artworkSubmit');
+}
+// 選んだ地点が正しいか（固定5か所のどれか、または「その他」で範囲内のピン）
+function validLocation(loc) {
+    if (!loc) return false;
+    const p = window.minowaPlace(loc.place);
+    if (!p) return false;
+    return p.isOther ? window.minowaInArea(Number(loc.lat), Number(loc.lon)) : true;
+}
+// 送る座標：固定5か所は places.js の座標、「その他」はピンの座標
+function locationLatLon(loc) {
+    const p = window.minowaPlace(loc.place);
+    return p.isOther ? { lat: Number(loc.lat), lon: Number(loc.lon) } : { lat: p.lat, lon: p.lon };
 }
 
 // ---------- 確認の一覧 ----------
@@ -68,8 +73,7 @@ function renderSummary() {
         row('伝{つた}えたいこと', a.body ? '<span class="s8-v-body" data-user-text>' + esc(a.body) + '</span>' : NONE, 'artwork', !a.body),
         row('いつの行動{こうどう}', a.phase ? '<span class="s8-tag">' + rb(window.minowaPhaseLabel(a.phase)) + '</span>' : NONE_SEL, 'artwork', !a.phase),
         row('番号{ばんごう}', window.MINOWA_NUMBER_RE.test(a.number || '') ? '<span class="s8-v-num">' + esc(a.number) + '</span>' : NONE, 'artwork', !window.MINOWA_NUMBER_RE.test(a.number || '')),
-        row('自分{じぶん}の担当{たんとう}の場所{ばしょ}', place ? '📍 ' + rb(place.name) : NONE_SEL, 'place', !place),
-        row('読{よ}み取{と}った<br>ハザードマップ', appData.hazards.length ? appData.hazards.map(x => '<span class="s8-tag">' + rb(HAZARD_LABELS[x] || esc(x)) + '</span>').join('') : NONE_SEL, 'place', !appData.hazards.length)
+        row('作品{さくひん}にする場所{ばしょ}', place ? '📍 ' + rb(place.name) + (place.isOther ? ' <span class="s8-v-sub">' + rb('（地図{ちず}にピンを置{お}いた場所{ばしょ}）') + '</span>' : '') : NONE_SEL, 'place', !place)
     ].join('');
     const list = document.getElementById('summaryList');
     list.innerHTML = html;
@@ -83,8 +87,7 @@ function missingItems() {
     if (!a.body) m.push('伝えたいこと');
     if (!a.phase) m.push('いつの行動か');
     if (!window.MINOWA_NUMBER_RE.test(a.number || '')) m.push('番号');
-    if (!(appData.location && window.minowaPlace(appData.location.place))) m.push('場所');
-    if (!appData.hazards.length) m.push('災害');
+    if (!appData.location) m.push('場所');
     return m;
 }
 
@@ -167,14 +170,15 @@ function showArtwork() {
 // ---------- 送信 ----------
 function buildSubmitPayload(imageDataURL) {
     const a = appData.art;
-    const place = window.minowaPlace(appData.location && appData.location.place);
+    const place = window.minowaPlace(appData.location.place);
+    const ll = locationLatLon(appData.location);
     return {
         secret: CONFIG.SUBMIT_SECRET,
-        lat: place.lat,
-        lon: place.lon,
+        lat: ll.lat,
+        lon: ll.lon,
         properties: {
             field_23: a.phase || null,
-            field_24: appData.hazards.join(', '),
+            field_24: null,
             field_25: a.number,
             Message: a.title || '',
             Body: a.body || '',

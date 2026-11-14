@@ -64,3 +64,4 @@ ruby rt { position: absolute; left: 50%; top: calc(50% - 2.05em); transform: tra
 .s8-row { grid-template-columns: 8.4em minmax(0, 1fr) auto; }
 .s8-row-label { line-height: 1.9; padding-top: 6px; }
 .s8-download-note.error { color: #b91c1c; }
+.s8-v-sub { font-size: .92rem; font-weight: 700; color: #4b5563; }

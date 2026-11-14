@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>作品にする場所</title>
-    <link rel="stylesheet" href="./log_hazard_map_styles.css?v=minowa4">
+    <link rel="stylesheet" href="./log_hazard_map_styles.css?v=minowa6">
     <link rel="stylesheet" href="../../common/log-fit.css?v=minowa4">
     <link rel="stylesheet" href="../../common/kids.css?v=minowa4">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,35 +12,28 @@
 <body>
     <div class="container">
         <header class="page-header">
-            <div class="step-indicator">1 ハザードマップ</div>
-            <h1 class="page-title">作品{さくひん}にする場所{ばしょ}と災害{さいがい}を選{えら}ぼう</h1>
+            <div class="step-indicator">1 場所{ばしょ}</div>
+            <h1 class="page-title">作品{さくひん}にする場所{ばしょ}を選{えら}ぼう</h1>
         </header>
 
         <main class="content">
             <section class="input-section">
                 <h2 class="section-title">
-                    ① 自分{じぶん}の担当{たんとう}の場所{ばしょ}
+                    作品{さくひん}にする場所{ばしょ}
                     <span class="required-badge">必須{ひっす}</span>
                 </h2>
-                <p class="section-description">先生{せんせい}に言{い}われた場所{ばしょ}を1つ選{えら}んでください</p>
+                <p class="section-description">6つの中{なか}から1つ選{えら}んでください</p>
                 <div class="place-buttons" id="placeButtons"></div>
-                <div class="map-container place-map-container">
-                    <div id="map" class="map"></div>
-                </div>
                 <div class="validation-message" id="locationValidation" style="display: none;">
                     ⚠️ 場所{ばしょ}を選{えら}んでください
                 </div>
             </section>
 
-            <section class="input-section">
-                <h2 class="section-title">
-                    ② 読{よ}み取{と}ったハザードマップ
-                    <span class="required-badge">必須{ひっす}</span>
-                </h2>
-                <p class="section-description">使{つか}ったハザードマップをすべて選{えら}んでください（いくつでも選{えら}べます）</p>
-                <div class="hazard-selection" id="hazardSelection"></div>
-                <div class="validation-message" id="hazardValidation" style="display: none;">
-                    ⚠️ 1つ以上{いじょう}選{えら}んでください
+            <section class="input-section place-map-section">
+                <p class="map-instruction" id="mapInstruction">選{えら}んだ場所{ばしょ}が地図{ちず}に出{で}ます</p>
+                <div class="map-container place-map-container">
+                    <div id="map" class="map"></div>
+                    <div class="map-toast" id="mapToast" role="status" aria-live="polite" hidden></div>
                 </div>
             </section>
         </main>
@@ -51,10 +44,22 @@
         </footer>
     </div>
 
+    <!-- 「その他」でピンを置いたあとの確認 -->
+    <div class="pin-confirm" id="pinConfirm" hidden>
+        <div class="pin-confirm-card" role="dialog" aria-modal="true" aria-labelledby="pinConfirmTitle">
+            <h2 class="pin-confirm-title" id="pinConfirmTitle">ここでいいかな？</h2>
+            <div class="pin-confirm-map" id="pinConfirmMap"></div>
+            <div class="pin-confirm-btns">
+                <button type="button" class="btn-secondary" id="pinRetryBtn">◀ 置{お}き直{なお}す</button>
+                <button type="button" class="btn-primary" id="pinOkBtn">ここにする ✓</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="../../common/progress.js?v=minowa4"></script>
-    <script src="../../common/places.js?v=minowa4"></script>
+    <script src="../../common/places.js?v=minowa5"></script>
     <script src="../../common/ruby.js?v=minowa4"></script>
-    <script src="./log_hazard_map_script.js?v=minowa4"></script>
+    <script src="./log_hazard_map_script.js?v=minowa5"></script>
 </body>
 </html>

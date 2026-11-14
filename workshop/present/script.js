@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 箕輪小版：作品は Worker（minowa-submit）の GET /artworks、画像は GET /images/:key から読む
   //   images[0] は "images/<key>" なので、DATA_BASE + "/" + images[0] がそのまま画像の URL になる
   const DATA_BASE = (window.MINOWA_CONFIG && window.MINOWA_CONFIG.WORKER_URL) || "https://minowa-submit.kazuki131214.workers.dev";
-  const MINOWA_CENTER = [35.5523, 139.6569];   // 箕輪小学校の周辺
+  const MINOWA_CENTER = [35.5425, 139.6420];   // 綱島・日吉周辺（固定5か所のまん中あたり）
   const HIDDEN_IDS = [];   // 非表示にしたい作品idを入れる（取り下げ用の安全弁）
 
   /* ---------- 1. 地図（国土地理院タイル） ---------- */
@@ -161,10 +161,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const getViewed  = () => ls("minowa_bousai_viewed");
   const rb = (s) => window.rubyHTML ? window.rubyHTML(s) : s;
 
-  // 作品の場所（place が空の古いデータは、座標が近い場所にまとめる）
-  function placeOf(f){
-    const c = f.geometry && f.geometry.coordinates;
-    return window.minowaPlaceOf(f.properties.place, c && c[1], c && c[0]);
+  // 作品の地点（固定5か所のどれか、または「その他」）
+  function placeOf(f){ return window.minowaPlaceOf(f.properties.place); }
+  const isOtherWork = (f) => f.properties.place === "other";
+  // 地図に入れる範囲：固定5か所＋表示中の「その他」の作品
+  function allBounds(){
+    const pts = window.minowaPlacesBounds();
+    ALL.filter(isOtherWork).forEach(f => { const c = f.geometry.coordinates; pts.push([c[1], c[0]]); });
+    return pts;
   }
 
   /* ---------- 4. フィルタ判定 ---------- */
@@ -201,7 +205,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ---------- 5. 地図：場所ごとのピン（作品の数つき） ---------- */
-  // 3か所の同じ座標にそれぞれ10作品ほどが登録されるので、作品ごとのピンではなく場所のピンを出す
+  // 固定5か所は同じ座標に何作品も登録されるので、作品ごとのピンではなく場所のピン（作品の数つき）を出す
+  // 「その他」の作品は場所がばらばらなので、作品ごとに小さなピンを出し、押すとその作品のページを開く（1点ずつ）
   function placeIcon(pl, count, selected){
     return L.divIcon({
       className: "place-pin" + (selected ? " sel" : ""),
@@ -216,13 +221,23 @@ document.addEventListener("DOMContentLoaded", () => {
         .on("click", () => selectPlace(pl.id, true))
         .addTo(placeLayer);
     });
+    if (currentPlace !== "all" && currentPlace !== "other") return;
+    const oc = window.MINOWA_OTHER.color;
+    ALL.filter(f => isOtherWork(f) && passFilter(f, true)).forEach(f => {
+      const c = f.geometry.coordinates;
+      L.marker([c[1], c[0]], {
+        icon: L.divIcon({ className: "other-work-pin", html: '<span style="--pc:' + oc + '"></span>', iconSize: [22, 22], iconAnchor: [11, 11] }),
+        title: (f.properties.field_25 || "") + " " + (f.properties.Message || "")
+      }).on("click", () => { window.location.href = "detail.html?id=" + f.properties.id; })
+        .addTo(placeLayer);
+    });
   }
 
   /* ---------- 6. 場所のボタン・検索 ---------- */
   function renderPlaceTabs(){
     const box = document.getElementById("place-tabs");
     if (!box) return;
-    const items = [{ id:"all", short:"すべて", color:"#4f8b80" }].concat(window.MINOWA_PLACES);
+    const items = [{ id:"all", short:"すべて", color:"#4f8b80" }].concat(window.MINOWA_CHOICES);
     box.innerHTML = items.map(pl =>
       '<button type="button" class="place-tab' + (currentPlace === pl.id ? " active" : "") + '" data-place="' + pl.id + '" style="--pc:' + pl.color + '">'
       + '<span class="pt-name">' + rb(pl.short) + '</span><span class="pt-count">' + countAt(pl.id) + '</span></button>'
@@ -235,8 +250,13 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFilters();
     if (move){
       const pl = window.minowaPlace(id);
-      if (pl) map.setView([pl.lat, pl.lon], 17);
-      else map.fitBounds(window.minowaPlacesBounds(), { padding:[60,60], maxZoom:16 });
+      if (pl && !pl.isOther) map.setView([pl.lat, pl.lon], 17);
+      else if (pl && pl.isOther) {
+        const pts = ALL.filter(isOtherWork).map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+        if (pts.length) map.fitBounds(pts, { padding:[60,60], maxZoom:16 });
+        else map.fitBounds(window.minowaAreaBounds(), { padding:[20,20] });
+      }
+      else map.fitBounds(allBounds(), { padding:[60,60], maxZoom:16 });
     }
     const lc = document.getElementById("art-list-container");
     if (lc) lc.scrollTop = 0;
@@ -281,7 +301,8 @@ document.addEventListener("DOMContentLoaded", () => {
           (q ? '<span class="art-place" style="--pc:' + q.color + '">' + rb(q.short) + '</span>' : '') +
           '<span class="art-icons">' + icons + '</span></div>' +
         '</div>';
-      card.addEventListener("click", () => { window.location.href = "detail.html?id=" + id + (currentPlace !== "all" ? "&place=" + currentPlace : ""); });
+      // 「その他」の作品は「次の作品」の対象にしない（place をつけずに開く＝1点ずつ）
+      card.addEventListener("click", () => { window.location.href = "detail.html?id=" + id + (currentPlace !== "all" && currentPlace !== "other" && !isOtherWork(f) ? "&place=" + currentPlace : ""); });
       listContainer.appendChild(card);
     });
   }
@@ -397,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const qp = new URLSearchParams(location.search).get("place");
       if (qp && window.minowaPlace(qp)) selectPlace(qp, true);
-      else map.fitBounds(window.minowaPlacesBounds(), { padding:[60,60], maxZoom:16 });
+      else map.fitBounds(allBounds(), { padding:[60,60], maxZoom:16 });
     })
     .catch(err => {
       console.error("作品データの読み込みに失敗", err);
@@ -418,13 +439,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // 授業案 rev3：実際の画面の写真で、マップの見方を4枚で説明する（写真は tools/make_guide_images.mjs で作る）
     const steps = [
       { title:"① 箕輪小{みのわしょう}のみんなの作品{さくひん}", img:"guide_01.jpg?v=1",
-        desc:"箕輪小学校{みのわしょうがっこう}4年{ねん}2組{くみ}のみんなが、ハザードマップを読{よ}んで作{つく}った<strong>防災{ぼうさい}アート</strong>がのっています。<br>地図{ちず}のピンには、<strong>場所{ばしょ}の名前{なまえ}と作品{さくひん}の数{かず}</strong>が出{で}ています。" },
+        desc:"箕輪小学校{みのわしょうがっこう}4年{ねん}6組{くみ}のみんなが、ハザードマップを読{よ}んで作{つく}った<strong>防災{ぼうさい}アート</strong>がのっています。<br>地図{ちず}のピンには、<strong>場所{ばしょ}の名前{なまえ}と作品{さくひん}の数{かず}</strong>が出{で}ています。" },
       { title:"② 場所{ばしょ}を選{えら}ぶ・番号{ばんごう}で探{さが}す", img:"guide_02.jpg?v=1",
-        desc:"左上{ひだりうえ}の<strong>場所{ばしょ}のボタン</strong>か、地図{ちず}のピンを押{お}すと、その場所{ばしょ}の作品{さくひん}が並{なら}びます。<br><strong>番号{ばんごう}（例{れい} 4201）</strong>やタイトルでも探{さが}せます。" },
+        desc:"左上{ひだりうえ}の<strong>場所{ばしょ}のボタン</strong>か、地図{ちず}のピンを押{お}すと、その場所{ばしょ}の作品{さくひん}が並{なら}びます。<br><strong>番号{ばんごう}（例{れい} 4601）</strong>やタイトルでも探{さが}せます。" },
       { title:"③ 作品{さくひん}をタップ", img:"guide_03.jpg?v=1",
         desc:"左{ひだり}の一覧{いちらん}の作品{さくひん}を<strong>タップ</strong>すると、<br>その作品{さくひん}のくわしいページが開{ひら}きます。" },
       { title:"④ 作品{さくひん}のページ", img:"guide_04.jpg?v=1",
-        desc:"タイトル・<strong>伝{つた}えたいこと</strong>・場所{ばしょ}・災害{さいがい}・いつの行動{こうどう}かを見{み}られます。<br>地図{ちず}にハザードマップを重{かさ}ねて、<strong>その場所{ばしょ}の危険性{きけんせい}</strong>も見{み}られます。" }
+        desc:"タイトル・<strong>伝{つた}えたいこと</strong>・場所{ばしょ}・いつの行動{こうどう}かを見{み}られます。<br>地図{ちず}にハザードマップを重{かさ}ねて、<strong>その場所{ばしょ}の危険性{きけんせい}</strong>も見{み}られます。" }
     ];
     const rbx = (t) => window.rubyHTML ? window.rubyHTML(t) : t;
     let page = 0;

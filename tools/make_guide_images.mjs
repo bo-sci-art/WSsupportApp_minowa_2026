@@ -1,62 +1,36 @@
-// 防災行動マップの「使い方」の画像を、実際の画面から作る（workshop/present/guide_0N.jpg）
+// 防災行動マップの「使い方」の写真を、実際の画面から作る（workshop/present/guide_0N.jpg・detail_guide_0N.jpg）
 //
-// 使い方：
-//   1) node tools/serve.mjs 5500   と   手元の Worker（cd worker && npm.cmd run dev）を動かす
-//   2) node tools/make_guide_images.mjs <見本の作品の dataフォルダのURL> [WorkerのURL] [ADMIN_KEY]
-//      見本の作品の dataフォルダのURL：既存の防災行動マップ（大人版）を公開しているサイトの data フォルダ
-//      （artworks.geojson と images/ がある場所。末尾は「/data」）。このリポジトリには書かない。
+// 使い方（授業で作品が登録されたあと、または先生が見本の作品をアプリで登録したあと）：
+//   1) node tools/serve.mjs 5500
+//   2) node tools/make_guide_images.mjs [WorkerのURL] [写す作品のid（カンマ区切り。省略すると全部）]
+//      WorkerのURL を省略すると、本番の箕輪小版 Worker（minowa-submit）から作品を読む（読むだけ。登録・削除はしない）
 //
-// 既存の防災行動マップ（大人版）の作品3件を見本として手元の Worker に登録し、画面を撮って、最後に見本の作品を消す。
+// 箕輪小版の作品だけを使う（ほかのアプリ・ほかの学校のデータは使わない）。
+// 固定の地点のうち作品がいちばん多い場所を、一覧（③）と作品ページ（「次の作品」）の写真に使う。
 // 撮るときに、説明したいところをオレンジの枠と番号で目立たせる。
 import { chromium } from "playwright";
 import path from "node:path";
 
-// 見本の作品を読む場所（大人版の data フォルダ）は、撮り直すときにコマンドで渡す（リポジトリには書かない）
-const ADULT = (process.argv[2] || "").replace(/\/+$/, "");
-if (!/^https:\/\/.+\/data$/.test(ADULT)) {
-  console.error("使い方: node tools/make_guide_images.mjs <見本の作品の dataフォルダのURL（末尾は /data）> [WorkerのURL] [ADMIN_KEY]");
-  process.exit(1);
-}
-const WORKER = (process.argv[3] || "http://127.0.0.1:8787").replace(/\/+$/, "");
-const ADMIN_KEY = process.argv[4] || "local-admin-key-for-test";
+const WORKER = (process.argv[2] || "https://minowa-submit.kazuki131214.workers.dev").replace(/\/+$/, "");
+const PICK = (process.argv[3] || "").split(",").map(s => s.trim()).filter(Boolean);
 const APP = "http://localhost:5500";
 const OUT = path.resolve("workshop/present");
 
-const PLACES = [
-  { id: "hiyoshi5", lat: 35.55112, lon: 139.65574 },
-  { id: "kagami", lat: 35.54543, lon: 139.65512 },
-  { id: "minowa", lat: 35.55400, lon: 139.65763 }
-];
-// 見本の作品：既存の防災行動マップ（大人版・10/18 の WS）の作品を、公開されている画像と文章からそのまま使う（読むだけ）
-// 作品73「子どもたちと防災！」を中心に、場所ごとに1作品ずつ
-const SAMPLES = [
-  { adultId: "73", place: "hiyoshi5", number: "4201", phase: "事前", hazards: "洪水（外水氾濫）, 高潮, 土砂災害（急傾斜地の崩壊）" },
-  { adultId: "54", place: "kagami",   number: "4202", phase: "災害時", hazards: "洪水（外水氾濫）" },
-  { adultId: "67", place: "minowa",   number: "4203", phase: "災害時", hazards: "洪水（外水氾濫）, 高潮" },
-  // 作品ページの「次の作品」を写すため、日吉五丁目公園にもう1作品
-  { adultId: "69", place: "hiyoshi5", number: "4204", phase: "災害時", hazards: "洪水（外水氾濫）" }
-];
+const all = await fetch(WORKER + "/artworks").then(r => r.json());
+const works = all.features.filter(f => !PICK.length || PICK.includes(String(f.properties.id)));
+const ids = works.map(f => String(f.properties.id));
+const count = {};
+works.forEach(f => { const p = f.properties.place; if (p && p !== "other") count[p] = (count[p] || 0) + 1; });
+const mainPlace = Object.keys(count).sort((a, b) => count[b] - count[a])[0];
+if (!mainPlace || count[mainPlace] < 2) {
+  console.error("固定の地点に2作品以上ある場所が必要です（「次の作品」ボタンを写すため）。作品を登録してから実行してください。");
+  process.exit(1);
+}
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1180, height: 820 }, deviceScaleFactor: 1, locale: "ja-JP" });
 const page = await ctx.newPage();
-await page.goto(`${APP}/workshop/start/index.html?worker=${encodeURIComponent(WORKER)}`);
-
-const adult = await fetch(ADULT + "/artworks.geojson").then(r => r.json());
-const ids = [];
-for (const sm of SAMPLES) {
-  const ft = adult.features.find(x => String(x.properties.id || x.properties.OBJECTID) === sm.adultId);
-  if (!ft) throw new Error("大人版の作品が見つからない: " + sm.adultId);
-  const p = ft.properties;
-  const buf = Buffer.from(await fetch(ADULT + "/" + p.images[0]).then(r => r.arrayBuffer()));
-  const pl = PLACES.find(x => x.id === sm.place);
-  const r = await fetch(`${WORKER}/submit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-    secret: "minowa-ws-2026", lat: pl.lat, lon: pl.lon, imageBase64: "data:image/jpeg;base64," + buf.toString("base64"), imageExt: "jpg",
-    properties: { field_23: sm.phase, field_24: sm.hazards, field_25: sm.number, Message: p.Message, Body: String(p.collage || p.Mabling || "").replace(/^・/gm, ""), place: sm.place }
-  }) }).then(r => r.json());
-  if (!r.ok) throw new Error("登録できない: " + JSON.stringify(r));
-  ids.push(r.id);
-}
+await page.goto(`${APP}/workshop/start/index.html?worker=${encodeURIComponent(WORKER.startsWith("http://127.0.0.1") ? WORKER : "default")}`);
 
 try {
 // 撮影中は見本の作品だけを見せる（手元で試した作品が写らないように）
@@ -111,7 +85,7 @@ await mark(["#sidebar-places"], { pad: 4 });
 await page.screenshot({ path: path.join(OUT, "guide_02.jpg"), type: "jpeg", quality: 82 });
 
 // 3：左の一覧の作品をタップ
-await page.click('.place-tab[data-place="hiyoshi5"]');
+await page.click('.place-tab[data-place="' + mainPlace + '"]');
 await page.waitForTimeout(1500);
 await mark(["#art-list-container .art-card"], { pad: 4, finger: true });
 await page.screenshot({ path: path.join(OUT, "guide_03.jpg"), type: "jpeg", quality: 82 });
@@ -142,6 +116,5 @@ await page.screenshot({ path: path.join(OUT, "detail_guide_03.jpg"), type: "jpeg
 
 } finally {
 await browser.close();
-for (const id of ids) await fetch(`${WORKER}/artworks/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + ADMIN_KEY } });
 }
-console.log(`使い方の画像を作りました（guide_01〜04.jpg・detail_guide_01〜03.jpg）。見本の作品 ${ids.length} 件は削除しました。`);
+console.log(`使い方の画像を作りました（guide_01〜04.jpg・detail_guide_01〜03.jpg）（写した作品 ${ids.length} 件）。`);

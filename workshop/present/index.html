@@ -7,7 +7,7 @@
 
   <!-- ▼ Leaflet（同梱・外部依存なし） -->
   <link rel="stylesheet" href="./leaflet.css">
-  <link rel="stylesheet" href="./style.css?v=minowa7">
+  <link rel="stylesheet" href="./style.css?v=minowa8">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
         <div class="art-search-row">
           <span class="art-search-icon">🔍</span>
           <input type="search" id="art-search" class="art-search" inputmode="search" autocomplete="off"
-                 placeholder="番号（例 4201）かタイトルで探す" aria-label="番号かタイトルで探す">
+                 placeholder="番号（例 4601）かタイトルで探す" aria-label="番号かタイトルで探す">
         </div>
       </div>
 
@@ -51,14 +51,8 @@
 
         <div class="filter-content closed">
           <div class="filter-group">
-            <div class="filter-label">災害{さいがい}の種類{しゅるい}</div>
-            <div class="filter-chips">
-              <button type="button" class="chip active" data-cat="all">すべて</button>
-              <button type="button" class="chip" data-cat="mizu">水害{すいがい}</button>
-              <button type="button" class="chip" data-cat="jiban">地盤{じばん}</button>
-              <button type="button" class="chip" data-cat="jishin">地震{じしん}</button>
-            </div>
-
+            <!-- 箕輪小版：作品ごとの災害は選ばないので「災害の種類」の絞り込みはなくした（ハザードマップを重ねる表示は残す） -->
+            <div class="filter-label">ハザードマップ</div>
             <button type="button" id="open-hazard-btn" class="hazard-overlay-btn">
                🗺️ ハザードマップを重{かさ}ねる
             </button>
@@ -154,9 +148,9 @@
   <!-- ▼ Leaflet 本体（同梱） -->
   <script src="./leaflet.js"></script>
   <script src="../common/config.js?v=minowa4"></script>
-  <script src="../common/places.js?v=minowa4"></script>
+  <script src="../common/places.js?v=minowa5"></script>
   <script src="../common/ruby.js?v=minowa4"></script>
-  <script src="./script.js?v=minowa9"></script>
+  <script src="./script.js?v=minowa10"></script>
 
   <div id="tutorial-overlay" class="tutorial-overlay" style="display: none;">
     <div class="tutorial-card">

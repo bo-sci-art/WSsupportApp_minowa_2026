@@ -53,10 +53,8 @@ document.addEventListener("DOMContentLoaded", function () {
     })
     .catch(err => { console.error("作品データ読込失敗", err); alert("作品データを読み込めませんでした。"); });
 
-  function placeOf(f) {
-    const c = f.geometry && f.geometry.coordinates;
-    return window.minowaPlaceOf(f.properties.place, c && c[1], c && c[0]);
-  }
+  function placeOf(f) { return window.minowaPlaceOf(f.properties.place); }
+  const isOtherWork = (f) => f.properties.place === "other";
 
   function renderArtwork() {
     const img = document.getElementById("art-image");
@@ -87,7 +85,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const pl = placeOf(feature);
     document.getElementById("art-place").innerHTML = pl ? rb(pl.name) : "—";
     const hz = String(P.field_24 || "").split(/[,、]\s*/).map(s => s.trim()).filter(Boolean);
-    document.getElementById("art-hazards").innerHTML = hz.length ? hz.map(h => '<span class="dv-tag">' + rb(HAZARD_LABELS[h] || esc(h)) + '</span>').join("") : "—";
+    // 箕輪小版は災害を選ばないので、災害が入っていない作品はこの行を出さない
+    if (hz.length) document.getElementById("art-hazards").innerHTML = hz.map(h => '<span class="dv-tag">' + rb(HAZARD_LABELS[h] || esc(h)) + '</span>').join("");
+    else { document.getElementById("art-hazards").style.display = "none"; document.getElementById("art-hazards-dt").style.display = "none"; }
     const ph = String(P.field_23 || "").split(/[,、]\s*/).map(s => s.trim()).filter(Boolean);
     document.getElementById("art-phase").innerHTML = ph.length ? ph.map(v => '<span class="dv-tag">' + rb(window.minowaPhaseLabel(v)) + '</span>').join("") : "—";
     document.getElementById("art-number").textContent = P.field_25 || "—";
@@ -96,14 +96,17 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderMap() {
     const c = feature.geometry.coordinates;
     const pl = placeOf(feature);
-    const center = pl ? [pl.lat, pl.lon] : [c[1], c[0]];
+    // 固定5か所はその場所の座標、「その他」はピンを置いた座標
+    const center = (pl && !pl.isOther) ? [pl.lat, pl.lon] : [c[1], c[0]];
     const map = L.map("surrounding-map", { center, zoom: 16, zoomControl: true, attributionControl: true });
     L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "地理院タイル" }).addTo(map);
     const color = pl ? pl.color : "#4f8b80";
     L.marker(center, { icon: L.divIcon({ className: "dv-pin", html: '<span style="background:' + color + '"></span>', iconSize: [20, 20], iconAnchor: [10, 10] }) }).addTo(map);
     const box = document.getElementById("hz-chips");
     // 作品が選んだ災害のハザードマップを、ボタン1つでまとめて重ねる／外す（右側をスクロールさせないため）
-    const defs = HZ_DEFS.filter(d => d.re.test(P.field_24 || ""));
+    //   箕輪小版は作品ごとに災害を選ばないので、災害が入っていない作品は3つ（洪水・高潮・土砂災害）をまとめて重ねる
+    const picked = HZ_DEFS.filter(d => d.re.test(P.field_24 || ""));
+    const defs = picked.length ? picked : HZ_DEFS;
     if (defs.length) {
       const layers = defs.map(d => L.tileLayer(d.url, { maxZoom: 17, opacity: defs.length > 1 ? .55 : .7 }));
       const names = defs.map(d => d.label).join("・");
@@ -125,9 +128,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ---- 前の作品・次の作品（同じ場所の中を番号の順に） ----
+  //   「その他」の作品は場所がばらばらなので「前の作品／次の作品」の対象にしない（1点ずつ表示）
   function setupPrevNext() {
-    const curPlace = listPlace && window.minowaPlace(listPlace) ? listPlace : null;
-    const list = ALL.filter(f => { if (!curPlace) return true; const q = placeOf(f); return q && q.id === curPlace; })
+    const prevB = document.getElementById("prev-btn"), nextB = document.getElementById("next-btn"), posB = document.getElementById("nav-pos");
+    if (isOtherWork(feature)) { prevB.style.visibility = "hidden"; nextB.style.visibility = "hidden"; posB.textContent = ""; return; }
+    const curPlace = listPlace && window.minowaPlace(listPlace) && listPlace !== "other" ? listPlace : null;
+    const list = ALL.filter(f => { if (isOtherWork(f)) return false; if (!curPlace) return true; const q = placeOf(f); return q && q.id === curPlace; })
       .sort((a, b) => String(a.properties.field_25 || "9999").localeCompare(String(b.properties.field_25 || "9999")) || (Number(a.properties.id) - Number(b.properties.id)));
     const i = list.findIndex(f => String(f.properties.id) === String(artId));
     const prev = document.getElementById("prev-btn"), next = document.getElementById("next-btn"), pos = document.getElementById("nav-pos");
@@ -156,7 +162,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!overlay) return;
     const steps = [
       { img: "detail_guide_01.jpg?v=1", title: "作品{さくひん}の見方{みかた}", desc: "背景{はいけい}の<strong>マーブリング</strong>は、その場所{ばしょ}の<strong>災害{さいがい}リスク</strong>を、<br>上{うえ}に貼{は}った<strong>コラージュ</strong>（スタンプ）は、<strong>防災行動{ぼうさいこうどう}</strong>を表{あらわ}しています。" },
-      { img: "detail_guide_02.jpg?v=1", title: "作者{さくしゃ}のメッセージ", desc: "作品{さくひん}のとなりには、タイトルと<strong>この作品{さくひん}で伝{つた}えたいこと</strong>、<br><strong>作品{さくひん}の情報{じょうほう}</strong>（場所{ばしょ}・災害{さいがい}・いつの行動{こうどう}・作者{さくしゃ}）が出{で}ています。" },
+      { img: "detail_guide_02.jpg?v=1", title: "作者{さくしゃ}のメッセージ", desc: "作品{さくひん}のとなりには、タイトルと<strong>この作品{さくひん}で伝{つた}えたいこと</strong>、<br><strong>作品{さくひん}の情報{じょうほう}</strong>（場所{ばしょ}・いつの行動{こうどう}・作者{さくしゃ}）が出{で}ています。" },
       { img: "detail_guide_03.jpg?v=1", title: "この場所{ばしょ}の危険性{きけんせい}", desc: "「ハザードマップを重{かさ}ねる」を押{お}すと、作品{さくひん}がハザードマップに重{かさ}なります。<br>「次{つぎ}の作品{さくひん}」ボタンで、同{おな}じ場所{ばしょ}をテーマにした作品{さくひん}を順番{じゅんばん}に見{み}ることができます。" }
     ];
     let page = 0;
