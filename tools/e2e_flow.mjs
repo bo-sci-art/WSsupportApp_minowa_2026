@@ -89,7 +89,7 @@ async function flow(label, viewport, placeId, number) {
     p.on("pageerror", e => run.errors.push(`${p.url().replace(APP, "")}: ${e.message}`));
     p.on("dialog", d => d.accept());
     // 矢上小版の Worker・画像に1回もアクセスしないこと（読み込みも書き込みも）
-    p.on("request", r => { const u = r.url(); if (/yagami/i.test(u)) run.yagamiRequests.push(r.method() + " " + u); if (/workers.dev|127.0.0.1:8787/.test(u)) run.workerHosts.add(new URL(u).host); });
+    p.on("request", r => { const u = r.url(); if (/yagami/i.test(u)) run.yagamiRequests.push(r.method() + " " + u); { const h = new URL(u).host; if (/.workers.dev$|^127.0.0.1:8787$/.test(h)) run.workerHosts.add(h); } });
   };
   watch(page);
 
