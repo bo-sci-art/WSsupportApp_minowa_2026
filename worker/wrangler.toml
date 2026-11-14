@@ -10,7 +10,7 @@ ALLOWED_ORIGINS = "https://bo-sci-art.github.io"
 binding = "DB"
 database_name = "minowa-artworks"
 # ↓ 手順書の「2. D1 を作る」で表示された database_id に書きかえる
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "c1f869c4-8666-412c-a887-d87bed17460e"
 
 [[r2_buckets]]
 binding = "IMAGES"
