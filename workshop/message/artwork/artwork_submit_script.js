@@ -1,5 +1,5 @@
 /**
- * S7 タイトル・伝えたいこと・いつの行動か・番号（矢上小版・授業案 rev3）
+ * S7 タイトル・伝えたいこと・いつの行動か・番号（箕輪小版・授業案 rev3）
  * 保存先：localStorage.artworkSubmit = { title, body, phase, number, creationDate }
  *   phase  : 事前／災害時／復旧時（保存する値は変えない。画面は「災害の前／とき／あと」）
  *   number : クラス＋出席番号の4桁（4201〜4228）
@@ -7,7 +7,7 @@
 const CONFIG = {
     backUrl: '../../collage/app/index.html',
     nextUrl: '../lastconfirm/final_submit.html',
-    storageKey: 'artworkSubmit'
+    storageKey: 'minowa_artworkSubmit'
 };
 
 
@@ -57,7 +57,7 @@ function save() {
 
 function renderPhases() {
     el.phases.innerHTML = '';
-    window.YAGAMI_PHASES.forEach(p => {
+    window.MINOWA_PHASES.forEach(p => {
         const label = document.createElement('label');
         label.className = 'phase-option' + (state.phase === p.value ? ' selected' : '');
         label.innerHTML = '<input type="radio" name="phase" value="' + p.value + '"' + (state.phase === p.value ? ' checked' : '') + '>'
@@ -73,7 +73,7 @@ function renderPhases() {
     });
 }
 
-function numberOK(v) { return window.YAGAMI_NUMBER_RE.test(v); }
+function numberOK(v) { return window.MINOWA_NUMBER_RE.test(v); }
 function update() {
     el.next.disabled = !(state.title && state.body && state.phase && numberOK(state.number));
 }
@@ -108,7 +108,7 @@ el.next.addEventListener('click', () => {
 function idbGetArtwork() {
     return new Promise(resolve => {
         try {
-            const req = indexedDB.open('ws_art_db', 1);
+            const req = indexedDB.open('minowa_ws_art_db', 1);
             req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains('images')) req.result.createObjectStore('images'); };
             req.onsuccess = () => {
                 try {
@@ -125,7 +125,7 @@ async function showArtwork() {
     const img = document.getElementById('artPreview');
     const empty = document.getElementById('artEmpty');
     let src = null;
-    try { src = localStorage.getItem('artworkImage'); } catch (e) { /* ignore */ }
+    try { src = localStorage.getItem('minowa_artworkImage'); } catch (e) { /* ignore */ }
     if (!src) { const blob = await idbGetArtwork(); if (blob) src = URL.createObjectURL(blob); }
     if (!src) { empty.innerHTML = window.rubyHTML('作品{さくひん}の絵{え}が見{み}つかりません'); return; }
     img.src = src;

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>ここまで</title>
-<link rel="stylesheet" href="../../common/kids.css?v=yagami4">
+<link rel="stylesheet" href="../../common/kids.css?v=minowa4">
 <style>
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -31,18 +31,18 @@
       <button class="btn go" type="button" onclick="location.href='../../marbling/app/index.html'">マーブリングへ ▶</button>
     </div>
   </main>
-  <script src="../../common/progress.js?v=yagami4"></script>
-  <script src="../../common/places.js?v=yagami4"></script>
+  <script src="../../common/progress.js?v=minowa4"></script>
+  <script src="../../common/places.js?v=minowa4"></script>
   <script>
     (function () {
       try {
-        var d = JSON.parse(localStorage.getItem('hazardMapLog') || '{}');
-        var p = d.location && window.yagamiPlace(d.location.place);
+        var d = JSON.parse(localStorage.getItem('minowa_hazardMapLog') || '{}');
+        var p = d.location && window.minowaPlace(d.location.place);
         if (p) document.getElementById('chosen').textContent = '📍 ' + p.name;
         else document.getElementById('chosen').style.display = 'none';
       } catch (e) {}
     })();
   </script>
-  <script src="../../common/ruby.js?v=yagami4"></script>
+  <script src="../../common/ruby.js?v=minowa4"></script>
 </body>
 </html>

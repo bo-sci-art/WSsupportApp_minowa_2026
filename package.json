@@ -1,8 +1,8 @@
 {
-  "name": "wssupportapp-yagami-2026",
+  "name": "wssupportapp-minowa-2026",
   "private": true,
   "type": "module",
-  "description": "矢上小版 WS支援アプリのテスト用（アプリ本体はビルド不要の静的ファイル）",
+  "description": "箕輪小版 WS支援アプリのテスト用（アプリ本体はビルド不要の静的ファイル）",
   "scripts": {
     "serve": "node tools/serve.mjs 5500",
     "screenshots": "node tools/screenshots.mjs",

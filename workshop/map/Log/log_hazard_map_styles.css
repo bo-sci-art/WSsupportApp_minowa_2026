@@ -472,7 +472,7 @@ body {
     .hazard-selection { grid-template-columns: 1fr !important; }
 }
 
-/* ===== 矢上小版（子ども向け） ===== */
+/* ===== 箕輪小版（子ども向け） ===== */
 .hazard-option { padding: 10px 12px; min-height: 56px; }
 .hazard-option input[type="checkbox"] { width: 26px; height: 26px; margin-right: 10px; }
 .hazard-option label { font-size: 1.05rem; line-height: 1.9; font-weight: 700; }

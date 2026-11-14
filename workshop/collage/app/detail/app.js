@@ -160,7 +160,7 @@ if (clearAllBtn) {
 // ===== 作品画像を投稿ページ用にlocalStorageへ保存（自動投稿の下準備） =====
 function persistArtworkImage(quality, maxDim) {
   quality = quality || 0.85;
-  maxDim = maxDim || 1000;   // 矢上小版：送信画像は長辺1000px
+  maxDim = maxDim || 1000;   // 箕輪小版：送信画像は長辺1000px
   try {
     const prevSel = selectedIndex;
     selectedIndex = -1;
@@ -180,8 +180,8 @@ function persistArtworkImage(quality, maxDim) {
     octx.drawImage(canvas, 0, 0, srcW, srcH, 0, 0, outW, outH);
 
     const dataURL = off.toDataURL('image/jpeg', quality);
-    localStorage.setItem('artworkImage', dataURL);
-    localStorage.setItem('artworkImageExt', 'jpg');
+    localStorage.setItem('minowa_artworkImage', dataURL);
+    localStorage.setItem('minowa_artworkImageExt', 'jpg');
 
     selectedIndex = prevSel;
     render();
@@ -430,7 +430,7 @@ function render(){
 // 既存のすぐ上/下どこでもOK
 const ALPHA_MIN = 0.2;
 const ALPHA_MAX = 1.0;
-const KID_STAMP_ALPHA = 0.68; // 矢上小版：大人版スライダーの初期値と同じ不透明度で固定
+const KID_STAMP_ALPHA = 0.68; // 箕輪小版：大人版スライダーの初期値と同じ不透明度で固定
 
 
 // UI（あれば反映、無ければ安全にスキップ）
@@ -443,7 +443,7 @@ const colorPreview = document.getElementById('colorPreview');
 
 // --- パレット（マーブリングと同じ） ---
 const PALETTES = {
-  // 矢上小版：マーブリングと同じ色・同じ並び（白・黒のあとに。水色を追加、薔薇色を赤のとなりに）
+  // 箕輪小版：マーブリングと同じ色・同じ並び（白・黒のあとに。水色を追加、薔薇色を赤のとなりに）
   Basic: ['#FFFFFF','#000000','#FF3B30','#FF2D55','#FF9500','#FFCC00','#34C759','#5AC8FA','#007AFF','#5856D6'],
   Pastel: ['#FFD1DC','#B5EAD7','#C7CEEA','#FFDAC1','#E2F0CB','#B5B9FF','#FFB7B2','#FF9CEE','#B28DFF'],
   Warm:   ['#FF3B30','#FF9500','#FFCC00','#FFB7B2','#FFD1DC','#FF9CEE','#FFDAC1','#FF2D55','#FF5E3A'],
@@ -461,8 +461,8 @@ const paletteSelect = document.getElementById('palette-select');
 const swatchesEl = document.getElementById('swatches');
 
 // marblingと同じキー名で保存（ページ間で色を揃えたいならこれが楽）
-let paletteName  = 'Basic'; // 矢上小版：パレット切替なし
-let lastColorHex = localStorage.getItem('lastColorHex') || null;
+let paletteName  = 'Basic'; // 箕輪小版：パレット切替なし
+let lastColorHex = localStorage.getItem('minowa_lastColorHex') || null;
 
 if (paletteSelect) paletteSelect.value = paletteName;
 
@@ -493,7 +493,7 @@ function renderSwatches(palette, selectedHex) {
       if (!colorEl) return;
       colorEl.value = hex;
       updateColorUI(hex);
-      localStorage.setItem('lastColorHex', hex);
+      localStorage.setItem('minowa_lastColorHex', hex);
 
       // ★コラージュ反映：選択中スタンプがあれば色を更新して再描画
       if (selectedIndex >= 0) {
@@ -528,7 +528,7 @@ function updateSwatchActive(hex) {
 if (paletteSelect) {
   paletteSelect.addEventListener('change', () => {
     paletteName = paletteSelect.value;
-    localStorage.setItem('paletteName', paletteName);
+    localStorage.setItem('minowa_paletteName', paletteName);
 
     let currentHex = colorEl ? colorEl.value : null;
     if (!currentHex || !PALETTES[paletteName].includes(currentHex)) {
@@ -564,7 +564,7 @@ if (colorEl) {
   colorEl.addEventListener('input', () => {
     const hex = colorEl.value;
     updateColorUI(hex);
-    localStorage.setItem('lastColorHex', hex);
+    localStorage.setItem('minowa_lastColorHex', hex);
 
     // パレット内ならハイライト、外なら解除（マーブリングと同じ）
     if (PALETTES[paletteName].includes(hex)) updateSwatchActive(hex);
@@ -622,7 +622,7 @@ function selectIndex(i){
     stamps[i].selected = true;
     
   if (alphaEl){
-    // 矢上小版：濃さのレバーは「左＝うすく、右＝こく」。選んだスタンプの濃さにつまみを合わせる
+    // 箕輪小版：濃さのレバーは「左＝うすく、右＝こく」。選んだスタンプの濃さにつまみを合わせる
     alphaEl.value = String(stamps[i].alpha);
   }
 
@@ -637,7 +637,7 @@ function selectIndex(i){
 // ======== スライダー（サイズ／不透明度）参照＆反映 ========
 if (alphaEl){
   alphaEl.addEventListener('input', () => {
-    // 矢上小版：つまみの値＝濃さ（不透明度）。選んでいるスタンプがあれば、その濃さを変える
+    // 箕輪小版：つまみの値＝濃さ（不透明度）。選んでいるスタンプがあれば、その濃さを変える
     // （選んでいないときは、つぎに置くスタンプの濃さになる）
     if (selectedIndex >= 0){
       stamps[selectedIndex].alpha = Number(alphaEl.value);
@@ -738,7 +738,7 @@ function createStampAt(x, y) {
   const baseScale = defaultScaleForTex(currentStampTex);
   const multiplier = 1.0;
   const scale = baseScale * multiplier;
-  // 矢上小版：濃さのレバーの値をそのまま使う（左＝うすく 0.2 〜 右＝こく 1.0）
+  // 箕輪小版：濃さのレバーの値をそのまま使う（左＝うすく 0.2 〜 右＝こく 1.0）
   const alpha = alphaEl ? Number(alphaEl.value) : KID_STAMP_ALPHA;
   const stamp = {
     id: `${currentStampId || 'stamp'}-${Date.now()}`,
@@ -1128,7 +1128,7 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // ===== IndexedDB: 画像(Blob)を保存/読み込みする共通ヘルパー =====
-const DB_NAME = "ws_art_db";
+const DB_NAME = "minowa_ws_art_db";
 const STORE_NAME = "images";
 const KEY_LATEST_MARBLING = "latest_marbling_base";
 
@@ -1179,10 +1179,10 @@ async function loadMarblingBaseIfExists() {
   return true;
 }
 
-// 起動時の読み込みはファイル末尾（矢上小版：自動保存と復元）で行う
+// 起動時の読み込みはファイル末尾（箕輪小版：自動保存と復元）で行う
 
 // =====================================================================
-// 矢上小版：自動保存と復元
+// 箕輪小版：自動保存と復元
 //  - スタンプ配置は IndexedDB（ws_art_db / images / collage_stamps）に保存
 //    座標はマーブリング画像の表示範囲（fit）に対する比率で持つので、
 //    画面の向きが変わっても、マーブリングを作り直しても位置が保たれる
@@ -1252,7 +1252,7 @@ async function saveNow() {
   __persisting = true;
   try {
     persistArtworkImage(0.85, 1000);
-    const dataURL = localStorage.getItem("artworkImage");
+    const dataURL = localStorage.getItem("minowa_artworkImage");
     if (dataURL) {
       const blob = await (await fetch(dataURL)).blob();
       await idbSet(KEY_ARTWORK_IMAGE, blob);

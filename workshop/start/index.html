@@ -68,13 +68,13 @@
     </div>
   </main>
 
-<script src="../common/config.js?v=yagami4"></script>
+<script src="../common/config.js?v=minowa4"></script>
 <script>
   // 「さいしょから」を押したときだけ、前の人の作品データを消す（共有のiPadでも真っさらから始められるように）
   // ※ページを開いただけでは消さない。1コマ目と2コマ目のあいだはデータを残し、「つづきから」で再開する
   var FIRST_URL = "../map/app/index.html";
-  var LS_KEYS = ["hazardMapLog","marblingLog","collageLog","artworkSubmit","artworkImage","artworkImageExt",
-                 "pendingArtworkSubmitPayload","lastSubmittedArtworkId","artworkSavedId","lastColorHex","paletteName","wsResumePage"];
+  var LS_KEYS = ["minowa_hazardMapLog","minowa_marblingLog","minowa_collageLog","minowa_artworkSubmit","minowa_artworkImage","minowa_artworkImageExt",
+                 "minowa_pendingArtworkSubmitPayload","minowa_lastSubmittedArtworkId","minowa_artworkSavedId","minowa_lastColorHex","minowa_paletteName","minowa_wsResumePage"];
   var IDB_KEYS = ["latest_marbling_base","collage_stamps","artwork_image"];
   var PAGE_NAMES = {
     "map/app/index.html": "ハザードマップ",
@@ -92,7 +92,7 @@
     try { LS_KEYS.forEach(function (k) { localStorage.removeItem(k); }); } catch (e) { console.warn(e); }
     return new Promise(function (resolve) {
       try {
-        var req = indexedDB.open("ws_art_db", 1);
+        var req = indexedDB.open("minowa_ws_art_db", 1);
         req.onupgradeneeded = function () {
           if (!req.result.objectStoreNames.contains("images")) req.result.createObjectStore("images");
         };
@@ -115,9 +115,9 @@
   }
 
   // どの画面を出すか
-  var resume = lsGet("wsResumePage");
-  var hasData = !!(resume || lsGet("hazardMapLog") || lsGet("artworkSubmit") || lsGet("artworkImage"));
-  var done = !!lsGet("lastSubmittedArtworkId");
+  var resume = lsGet("minowa_wsResumePage");
+  var hasData = !!(resume || lsGet("minowa_hazardMapLog") || lsGet("minowa_artworkSubmit") || lsGet("minowa_artworkImage"));
+  var done = !!lsGet("minowa_lastSubmittedArtworkId");
   if (done) document.getElementById("viewDone").hidden = false;
   else if (hasData) document.getElementById("viewResume").hidden = false;
   else document.getElementById("viewNew").hidden = false;

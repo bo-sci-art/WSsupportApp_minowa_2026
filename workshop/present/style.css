@@ -862,7 +862,7 @@ html, body {
 .art-pin svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));}
 .art-pin.sel svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));}
 
-/* 矢上小版：ルビが入っても文字が離れないように */
+/* 箕輪小版：ルビが入っても文字が離れないように */
 .art-title { display: block !important; }
 .art-title.art-message { font-size: .95em; line-height: 1.6; margin-bottom: 4px; }
 /* ふりがなが漢字より長くても、漢字の間をあけない（ふりがなを左右にはみ出させる） */

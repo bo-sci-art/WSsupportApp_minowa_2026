@@ -1,12 +1,12 @@
 /* =========================================================
-   作品ページ（矢上小版・授業案 rev3）
+   作品ページ（箕輪小版・授業案 rev3）
    作品の画像・タイトル・伝えたいこと・場所・災害・いつの行動か・作者の番号を1画面で見せる。
    （授業案 rev3：「共感した」「実践したい」のボタンは使わない）
    「前の作品／次の作品」は、同じ場所（?place= があるとき）の作品を番号の順に移動する（発表用）。
    ========================================================= */
 document.addEventListener("DOMContentLoaded", function () {
 
-  const DATA_BASE = (window.YAGAMI_CONFIG && window.YAGAMI_CONFIG.WORKER_URL) || "https://yagami-submit.kazuki131214.workers.dev";
+  const DATA_BASE = (window.MINOWA_CONFIG && window.MINOWA_CONFIG.WORKER_URL) || "https://minowa-submit.kazuki131214.workers.dev";
   const HIDDEN_IDS = [];
   const PLACEHOLDER = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
   const rb = (s) => window.rubyHTML ? window.rubyHTML(s) : s;
@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function placeOf(f) {
     const c = f.geometry && f.geometry.coordinates;
-    return window.yagamiPlaceOf(f.properties.place, c && c[1], c && c[0]);
+    return window.minowaPlaceOf(f.properties.place, c && c[1], c && c[0]);
   }
 
   function renderArtwork() {
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const hz = String(P.field_24 || "").split(/[,、]\s*/).map(s => s.trim()).filter(Boolean);
     document.getElementById("art-hazards").innerHTML = hz.length ? hz.map(h => '<span class="dv-tag">' + rb(HAZARD_LABELS[h] || esc(h)) + '</span>').join("") : "—";
     const ph = String(P.field_23 || "").split(/[,、]\s*/).map(s => s.trim()).filter(Boolean);
-    document.getElementById("art-phase").innerHTML = ph.length ? ph.map(v => '<span class="dv-tag">' + rb(window.yagamiPhaseLabel(v)) + '</span>').join("") : "—";
+    document.getElementById("art-phase").innerHTML = ph.length ? ph.map(v => '<span class="dv-tag">' + rb(window.minowaPhaseLabel(v)) + '</span>').join("") : "—";
     document.getElementById("art-number").textContent = P.field_25 || "—";
   }
 
@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ---- 前の作品・次の作品（同じ場所の中を番号の順に） ----
   function setupPrevNext() {
-    const curPlace = listPlace && window.yagamiPlace(listPlace) ? listPlace : null;
+    const curPlace = listPlace && window.minowaPlace(listPlace) ? listPlace : null;
     const list = ALL.filter(f => { if (!curPlace) return true; const q = placeOf(f); return q && q.id === curPlace; })
       .sort((a, b) => String(a.properties.field_25 || "9999").localeCompare(String(b.properties.field_25 || "9999")) || (Number(a.properties.id) - Number(b.properties.id)));
     const i = list.findIndex(f => String(f.properties.id) === String(artId));
@@ -140,12 +140,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ---- 鑑賞済み・ヘッダー・リアクション ----
   function markViewed() {
-    const v = lsGet("bousai_viewed");
-    if (!v.includes(artId)) { v.push(artId); localStorage.setItem("bousai_viewed", JSON.stringify(v)); }
+    const v = lsGet("minowa_bousai_viewed");
+    if (!v.includes(artId)) { v.push(artId); localStorage.setItem("minowa_bousai_viewed", JSON.stringify(v)); }
   }
   function updateHeaderStats() {
     const v = document.getElementById("view-count");
-    if (v) v.textContent = lsGet("bousai_viewed").filter(id => ALL.some(f => String(f.properties.id) === String(id))).length + "/" + (ALL.length || "?");
+    if (v) v.textContent = lsGet("minowa_bousai_viewed").filter(id => ALL.some(f => String(f.properties.id) === String(id))).length + "/" + (ALL.length || "?");
   }
   // ---- 使い方（3ページ） ----
   function setupDetailTutorial() {
@@ -168,8 +168,8 @@ document.addEventListener("DOMContentLoaded", function () {
       dots.forEach((d, i) => d.classList.toggle("active", i === page));
       nextBtn.innerText = (page === steps.length - 1) ? "とじる" : "つぎへ ＞";
     }
-    const close = () => { try { localStorage.setItem("has_seen_detail_tutorial_rev3", "true"); } catch (e) {} overlay.style.display = "none"; };
-    if (!localStorage.getItem("has_seen_detail_tutorial_rev3")) { update(); overlay.style.display = "flex"; } else overlay.style.display = "none";
+    const close = () => { try { localStorage.setItem("minowa_has_seen_detail_tutorial_rev3", "true"); } catch (e) {} overlay.style.display = "none"; };
+    if (!localStorage.getItem("minowa_has_seen_detail_tutorial_rev3")) { update(); overlay.style.display = "flex"; } else overlay.style.display = "none";
     if (helpBtn) helpBtn.addEventListener("click", () => { page = 0; update(); overlay.style.display = "flex"; });
     nextBtn.onclick = () => { if (page < steps.length - 1) { page++; update(); } else close(); };
   }

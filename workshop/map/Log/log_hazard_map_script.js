@@ -1,5 +1,5 @@
 /**
- * S2 作品にする場所と災害を選ぶ（矢上小版・授業案 rev3）
+ * S2 作品にする場所と災害を選ぶ（箕輪小版・授業案 rev3）
  * - 場所は、先生が割り振った3か所（common/places.js）から1つ選ぶ。座標は固定
  * - 読み取ったハザードマップを選ぶ（いくつでも）
  * - 保存先：localStorage.hazardMapLog = { hazards:[正式名…], location:{ lat, lon, place, name } }
@@ -9,7 +9,7 @@
 const CONFIG = {
     backUrl: '../app/index.html',
     nextUrl: './break.html',          // 1コマ目はここまで（休み時間のあと、マーブリングから）
-    storageKey: 'hazardMapLog',
+    storageKey: 'minowa_hazardMapLog',
     // 授業案 rev3：液状化危険度・地震火災・内水氾濫・津波は使わない（津波はこの3か所ではアプリの地図に重ねられないため）
     hazardOptions: [
         '洪水（外水氾濫）',
@@ -55,11 +55,11 @@ function loadSaved() {
     try {
         const d = JSON.parse(localStorage.getItem(CONFIG.storageKey) || '{}');
         (d.hazards || []).forEach(h => { if (CONFIG.hazardOptions.includes(h)) state.selectedHazards.add(h); });
-        if (d.location && d.location.place && window.yagamiPlace(d.location.place)) state.place = d.location.place;
+        if (d.location && d.location.place && window.minowaPlace(d.location.place)) state.place = d.location.place;
     } catch (e) { console.warn(e); }
 }
 function save() {
-    const p = window.yagamiPlace(state.place);
+    const p = window.minowaPlace(state.place);
     const data = {
         hazards: Array.from(state.selectedHazards),
         location: p ? { lat: p.lat, lon: p.lon, place: p.id, name: p.plain } : null
@@ -98,7 +98,7 @@ function toggleHazard(hazard, on, div) {
 // ---------- 場所の選択（3か所のボタン） ----------
 function renderPlaces() {
     el.placeButtons.innerHTML = '';
-    window.YAGAMI_PLACES.forEach(p => {
+    window.MINOWA_PLACES.forEach(p => {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'place-btn' + (state.place === p.id ? ' selected' : '');
@@ -132,22 +132,22 @@ function initMap() {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
     }).addTo(state.map);
-    window.YAGAMI_PLACES.forEach(p => {
+    window.MINOWA_PLACES.forEach(p => {
         state.markers[p.id] = L.marker([p.lat, p.lon], { icon: placeIcon(p, false) })
             .on('click', () => selectPlace(p.id))
             .addTo(state.map);
     });
-    state.map.fitBounds(window.yagamiPlacesBounds(), { padding: [40, 40] });
+    state.map.fitBounds(window.minowaPlacesBounds(), { padding: [40, 40] });
     showPlaceOnMap(false);
 }
 function showPlaceOnMap(animate) {
     if (!state.map) return;
-    window.YAGAMI_PLACES.forEach(p => {
+    window.MINOWA_PLACES.forEach(p => {
         const m = state.markers[p.id];
         m.setIcon(placeIcon(p, p.id === state.place));
         m.setZIndexOffset(p.id === state.place ? 1000 : 0);
     });
-    const p = window.yagamiPlace(state.place);
+    const p = window.minowaPlace(state.place);
     if (p) state.map.setView([p.lat, p.lon], 17, { animate: !!animate });
 }
 

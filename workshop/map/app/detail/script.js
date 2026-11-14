@@ -33,22 +33,22 @@ const hazards = {
   }
 };
 
-/* ===== 地図：矢上小学校の周辺（矢上小版） ===== */
-const YAGAMI_CENTER = [35.5523, 139.6569];
-const map = L.map("viewDiv", {center:YAGAMI_CENTER, zoom:16, zoomControl:true, layers:[bases.white]});
+/* ===== 地図：箕輪小学校の周辺（箕輪小版） ===== */
+const MINOWA_CENTER = [35.5523, 139.6569];
+const map = L.map("viewDiv", {center:MINOWA_CENTER, zoom:16, zoomControl:true, layers:[bases.white]});
 L.control.scale({imperial:false}).addTo(map);
 
 /* ===== 授業案 rev3：作品にする3か所に名前つきの目印 ===== */
 (function(){
-  if (!window.YAGAMI_PLACES) return;
+  if (!window.MINOWA_PLACES) return;
   const rb = s => window.rubyHTML ? window.rubyHTML(s) : s;
-  window.YAGAMI_PLACES.forEach(p => {
+  window.MINOWA_PLACES.forEach(p => {
     L.marker([p.lat, p.lon], { zIndexOffset: 1000, icon: L.divIcon({
       className: 'place-marker',
       html: '<span class="pm-dot" style="background:'+p.color+'"></span><span class="pm-label">'+rb(p.short)+'</span>',
       iconSize: [16,16], iconAnchor: [8,8] }) }).addTo(map);
   });
-  map.fitBounds(window.yagamiPlacesBounds(), { padding: [60, 60], maxZoom: 16 });
+  map.fitBounds(window.minowaPlacesBounds(), { padding: [60, 60], maxZoom: 16 });
 })();
 let curBase = bases.white;
 
@@ -159,7 +159,7 @@ document.querySelectorAll(".chip").forEach(c => {
 });
 
 /* ===== 周辺の防災資源（避難場所・拠点・給水所）※既定は非表示・トグルで表示 ===== */
-const RES_DATA_BASE = "../../../../data";   // 矢上小版：このリポジトリの data/ を読む
+const RES_DATA_BASE = "../../../../data";   // 箕輪小版：このリポジトリの data/ を読む
 const RES_DEFS = {
   shelters: { file:"bousai_shelters.geojson", color:"#2e9e5b", label:"指定{してい}緊急{きんきゅう}避難{ひなん}場所{ばしょ}" },
   bases:    { file:"bousai_bases.geojson",    color:"#2f6fb0", label:"地域{ちいき}防災{ぼうさい}拠点{きょてん}" },

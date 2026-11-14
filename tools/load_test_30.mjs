@@ -2,7 +2,7 @@
 //
 // 使い方（Node.js 18 以上）:
 //   node tools/load_test_30.mjs <WorkerのURL> <ADMIN_KEY> [件数=28]
-//   例）node tools/load_test_30.mjs https://yagami-submit.kazuki131214.workers.dev XXXXXXXX
+//   例）node tools/load_test_30.mjs https://minowa-submit.kazuki131214.workers.dev XXXXXXXX
 //
 // 流れ:
 //   1. いまの作品数を数える
@@ -24,9 +24,9 @@ const N = Math.min(28, Number(n0 || 28));   // 番号は 4201〜4228 なので�
 const PLACES = [
   { id: "hiyoshi5", lat: 35.55112, lon: 139.65574 },
   { id: "kagami",   lat: 35.54543, lon: 139.65512 },
-  { id: "yagami",   lat: 35.55400, lon: 139.65763 }
+  { id: "minowa",   lat: 35.55400, lon: 139.65763 }
 ];
-const SECRET = process.env.SUBMIT_SECRET || "yagami-ws-20261118";
+const SECRET = process.env.SUBMIT_SECRET || "minowa-ws-2026";
 
 // 約200KB のダミー画像（JPEG の先頭・末尾つき。中身はランダム）
 function dummyJpegDataURL(i) {

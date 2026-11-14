@@ -3,5 +3,7 @@ worker/.wrangler/
 worker/.dev.vars
 tools/out/
 .DS_Store
-yagami_plan.md
+minowa_plan.md
 tools_wrangler.log
+
+worker/.admin_key

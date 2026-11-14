@@ -1,12 +1,12 @@
 {
-  "name": "yagami-submit",
+  "name": "minowa-submit",
   "private": true,
   "version": "1.0.0",
-  "description": "矢上小版 防災アートの作品登録 Worker（Cloudflare D1 + R2）",
+  "description": "箕輪小版 防災アートの作品登録 Worker（Cloudflare D1 + R2）",
   "scripts": {
     "dev": "wrangler dev --local --port 8787",
-    "db:init:local": "wrangler d1 execute yagami-artworks --local --file=schema.sql",
-    "db:init:remote": "wrangler d1 execute yagami-artworks --remote --file=schema.sql",
+    "db:init:local": "wrangler d1 execute minowa-artworks --local --file=schema.sql",
+    "db:init:remote": "wrangler d1 execute minowa-artworks --remote --file=schema.sql",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

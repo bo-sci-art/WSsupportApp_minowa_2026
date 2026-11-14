@@ -1,5 +1,5 @@
 /**
- * S8 確認して登録（矢上小版・授業案 rev3）
+ * S8 確認して登録（箕輪小版・授業案 rev3）
  * 入力内容と作品画像を Cloudflare Worker（POST /submit）に送り、D1（文章・地点）と R2（画像）に登録する。
  *
  * 送る項目（Worker の properties）
@@ -8,16 +8,16 @@
  * - field_23 : いつの行動か（事前／災害時／復旧時）
  * - field_24 : 読み取ったハザードマップ（カンマ区切り）
  * - field_25 : 作者の番号（4201〜4228）
- * - place    : 場所（hiyoshi5 / kagami / yagami）、lat / lon はその場所の固定の座標
+ * - place    : 場所（hiyoshi5 / kagami / minowa）、lat / lon はその場所の固定の座標
  * - Mabling・collage は使わない（空のまま）
  * 作品画像：localStorage.artworkImage（コラージュの自動保存で作られる）
  */
 
 const CONFIG = {
     // Cloudflare Worker の URL（作品の受付窓口）。デプロイ後に URL が違っていたらここと common/config.js を直す
-    WORKER_URL: 'https://yagami-submit.kazuki131214.workers.dev',
+    WORKER_URL: 'https://minowa-submit.kazuki131214.workers.dev',
     // Worker の SUBMIT_SECRET と同じ値（ページのソースを見ればだれでも分かる。ADMIN_KEY はここに書かない）
-    SUBMIT_SECRET: 'yagami-ws-20261118',
+    SUBMIT_SECRET: 'minowa-ws-2026',
     PAGES: {
         artwork: '../artwork/artwork_submit.html',
         artworkEdit: '../artwork/artwork_submit.html?edit=1',
@@ -27,7 +27,7 @@ const CONFIG = {
         map: '../../present/index.html'
     }
 };
-function workerBase() { return ((window.YAGAMI_CONFIG && window.YAGAMI_CONFIG.WORKER_URL) || CONFIG.WORKER_URL).replace(/\/+$/, ''); }
+function workerBase() { return ((window.MINOWA_CONFIG && window.MINOWA_CONFIG.WORKER_URL) || CONFIG.WORKER_URL).replace(/\/+$/, ''); }
 
 const HAZARD_LABELS = {
     '洪水（外水氾濫）': '洪水{こうずい}（外水氾濫{がいすいはんらん}）',
@@ -44,10 +44,10 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ 
 function rb(s) { return window.rubyHTML ? window.rubyHTML(s) : s; }
 
 function loadData() {
-    const h = readJSON('hazardMapLog');
+    const h = readJSON('minowa_hazardMapLog');
     appData.hazards = Array.isArray(h.hazards) ? h.hazards : [];
     appData.location = h.location || null;
-    appData.art = readJSON('artworkSubmit');
+    appData.art = readJSON('minowa_artworkSubmit');
 }
 
 // ---------- 確認の一覧 ----------
@@ -60,14 +60,14 @@ function row(label, valueHTML, editKey, empty) {
 }
 function renderSummary() {
     const a = appData.art;
-    const place = appData.location && window.yagamiPlace(appData.location.place);
+    const place = appData.location && window.minowaPlace(appData.location.place);
     const NONE = rb('（まだ入力{にゅうりょく}していません）');
     const NONE_SEL = rb('（まだ選{えら}んでいません）');
     const html = [
         row('タイトル', a.title ? '<span class="s8-v-title" data-user-text>' + esc(a.title) + '</span>' : NONE, 'artwork', !a.title),
         row('伝{つた}えたいこと', a.body ? '<span class="s8-v-body" data-user-text>' + esc(a.body) + '</span>' : NONE, 'artwork', !a.body),
-        row('いつの行動{こうどう}', a.phase ? '<span class="s8-tag">' + rb(window.yagamiPhaseLabel(a.phase)) + '</span>' : NONE_SEL, 'artwork', !a.phase),
-        row('番号{ばんごう}', window.YAGAMI_NUMBER_RE.test(a.number || '') ? '<span class="s8-v-num">' + esc(a.number) + '</span>' : NONE, 'artwork', !window.YAGAMI_NUMBER_RE.test(a.number || '')),
+        row('いつの行動{こうどう}', a.phase ? '<span class="s8-tag">' + rb(window.minowaPhaseLabel(a.phase)) + '</span>' : NONE_SEL, 'artwork', !a.phase),
+        row('番号{ばんごう}', window.MINOWA_NUMBER_RE.test(a.number || '') ? '<span class="s8-v-num">' + esc(a.number) + '</span>' : NONE, 'artwork', !window.MINOWA_NUMBER_RE.test(a.number || '')),
         row('自分{じぶん}の担当{たんとう}の場所{ばしょ}', place ? '📍 ' + rb(place.name) : NONE_SEL, 'place', !place),
         row('読{よ}み取{と}った<br>ハザードマップ', appData.hazards.length ? appData.hazards.map(x => '<span class="s8-tag">' + rb(HAZARD_LABELS[x] || esc(x)) + '</span>').join('') : NONE_SEL, 'place', !appData.hazards.length)
     ].join('');
@@ -82,8 +82,8 @@ function missingItems() {
     if (!a.title) m.push('タイトル');
     if (!a.body) m.push('伝えたいこと');
     if (!a.phase) m.push('いつの行動か');
-    if (!window.YAGAMI_NUMBER_RE.test(a.number || '')) m.push('番号');
-    if (!(appData.location && window.yagamiPlace(appData.location.place))) m.push('場所');
+    if (!window.MINOWA_NUMBER_RE.test(a.number || '')) m.push('番号');
+    if (!(appData.location && window.minowaPlace(appData.location.place))) m.push('場所');
     if (!appData.hazards.length) m.push('災害');
     return m;
 }
@@ -92,7 +92,7 @@ function missingItems() {
 function wsIdbGet(key) {
     return new Promise(function (resolve) {
         try {
-            const req = indexedDB.open('ws_art_db', 1);
+            const req = indexedDB.open('minowa_ws_art_db', 1);
             req.onupgradeneeded = function () { if (!req.result.objectStoreNames.contains('images')) req.result.createObjectStore('images'); };
             req.onsuccess = function () {
                 try {
@@ -148,18 +148,18 @@ async function rebuildArtworkFromParts() {
 }
 // 作品画像を必ず用意する：localStorage → IndexedDB（コラージュの自動保存）→ 部品から作り直し
 async function ensureArtworkImage() {
-    if (localStorage.getItem('artworkImage')) return;
+    if (localStorage.getItem('minowa_artworkImage')) return;
     try {
         const blob = await wsIdbGet('artwork_image');
         let dataURL = blob ? await blobToDataURL(blob) : null;
         if (!dataURL) dataURL = await rebuildArtworkFromParts();
-        if (dataURL) { localStorage.setItem('artworkImage', dataURL); localStorage.setItem('artworkImageExt', 'jpg'); }
+        if (dataURL) { localStorage.setItem('minowa_artworkImage', dataURL); localStorage.setItem('minowa_artworkImageExt', 'jpg'); }
     } catch (e) { console.error('作品画像の用意に失敗', e); }
 }
 function showArtwork() {
     const img = document.getElementById('artwork-preview-img');
     const empty = document.getElementById('artwork-preview-empty');
-    const data = localStorage.getItem('artworkImage');
+    const data = localStorage.getItem('minowa_artworkImage');
     if (data) { img.src = data; img.style.display = 'block'; empty.style.display = 'none'; }
     else { img.style.display = 'none'; empty.style.display = 'flex'; empty.innerHTML = rb('作品{さくひん}の絵{え}が見{み}つかりません。「コラージュを作{つく}り直{なお}す」を押{お}してください。'); }
 }
@@ -167,7 +167,7 @@ function showArtwork() {
 // ---------- 送信 ----------
 function buildSubmitPayload(imageDataURL) {
     const a = appData.art;
-    const place = window.yagamiPlace(appData.location && appData.location.place);
+    const place = window.minowaPlace(appData.location && appData.location.place);
     return {
         secret: CONFIG.SUBMIT_SECRET,
         lat: place.lat,
@@ -182,7 +182,7 @@ function buildSubmitPayload(imageDataURL) {
             creationDate: a.creationDate || new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)
         },
         imageBase64: imageDataURL,
-        imageExt: localStorage.getItem('artworkImageExt') || 'jpg'
+        imageExt: localStorage.getItem('minowa_artworkImageExt') || 'jpg'
     };
 }
 async function submitArtwork() {
@@ -190,7 +190,7 @@ async function submitArtwork() {
     loadData();
     const miss = missingItems();
     if (miss.length) { setStatus('error', 'まだ入{はい}っていない項目{こうもく}があります：' + miss.join('・')); return; }
-    const imageDataURL = localStorage.getItem('artworkImage');
+    const imageDataURL = localStorage.getItem('minowa_artworkImage');
     if (!imageDataURL) { setStatus('error', '作品{さくひん}の絵{え}が見{み}つかりません。「コラージュを作{つく}り直{なお}す」を押{お}してください。'); return; }
     prepareArtworkFile(imageDataURL);
     await sendSubmitPayload(buildSubmitPayload(imageDataURL));
@@ -200,13 +200,13 @@ async function sendSubmitPayload(payload) {
     setButton('sending');
     setStatus('info', '登録{とうろく}しています。少{すこ}し待{ま}ってください…');
     try {
-        localStorage.setItem('pendingArtworkSubmitPayload', JSON.stringify(payload));
+        localStorage.setItem('minowa_pendingArtworkSubmitPayload', JSON.stringify(payload));
         const res = await fetch(workerBase() + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         let json = null;
         try { json = await res.json(); } catch (e) { /* ignore */ }
         if (res.ok && json && json.ok) {
-            localStorage.removeItem('pendingArtworkSubmitPayload');
-            if (json.id) localStorage.setItem('lastSubmittedArtworkId', json.id);
+            localStorage.removeItem('minowa_pendingArtworkSubmitPayload');
+            if (json.id) localStorage.setItem('minowa_lastSubmittedArtworkId', json.id);
             setButton('success');
             setStatus(null);
             saveArtworkToDevice(json.id);   // 登録できた時点で、この端末に作品を自動で保存する
@@ -240,7 +240,7 @@ function showCompletion() { document.getElementById('step-complete').style.displ
 
 // 前回の送信が終わっていない（電波が切れたなど）ときは、もう一度送れるようにする
 function checkPendingSubmission() {
-    const pending = localStorage.getItem('pendingArtworkSubmitPayload');
+    const pending = localStorage.getItem('minowa_pendingArtworkSubmitPayload');
     if (!pending) return;
     setStatus('info', 'まだ送{おく}れていない作品{さくひん}があります。「登録{とうろく}する」を押{お}すと、もう一度{いちど}送{おく}ります。');
 }
@@ -278,14 +278,14 @@ function prepareArtworkFile(dataURL) {
 function saveArtworkToDevice(id) {
     const note = document.getElementById('download-note');
     try {
-        if (id && localStorage.getItem('artworkSavedId') === String(id)) return;   // もう保存してある
-        if (!artworkFileUrl) prepareArtworkFile(localStorage.getItem('artworkImage'));
+        if (id && localStorage.getItem('minowa_artworkSavedId') === String(id)) return;   // もう保存してある
+        if (!artworkFileUrl) prepareArtworkFile(localStorage.getItem('minowa_artworkImage'));
         if (!artworkFileUrl) throw new Error('no image');
         const a = document.createElement('a');
         a.href = artworkFileUrl;
-        a.download = 'yagami_' + (id ? id + '_' : '') + (appData.art.number || 'sakuhin') + '.jpg';
+        a.download = 'minowa_' + (id ? id + '_' : '') + (appData.art.number || 'sakuhin') + '.jpg';
         document.body.appendChild(a); a.click(); a.remove();
-        if (id) localStorage.setItem('artworkSavedId', String(id));
+        if (id) localStorage.setItem('minowa_artworkSavedId', String(id));
         if (note) { note.className = 's8-download-note'; note.innerHTML = rb('✓ 作品{さくひん}をこの端末{たんまつ}に保存{ほぞん}しました（iPad は「ファイル」アプリの「ダウンロード」に入{はい}ります）'); note.style.display = 'block'; }
     } catch (e) {
         console.error('作品の保存に失敗', e);
@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-submit-artwork').addEventListener('click', submitArtwork);
     checkPendingSubmission();
     // 登録が終わったあとにこの画面を開き直したときは、二重に登録しないように完了画面を出す
-    if (localStorage.getItem('lastSubmittedArtworkId')) { setButton('success'); showCompletion(); }
+    if (localStorage.getItem('minowa_lastSubmittedArtworkId')) { setButton('success'); showCompletion(); }
     await ensureArtworkImage();
     showArtwork();
 });

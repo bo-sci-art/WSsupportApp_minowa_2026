@@ -1,6 +1,6 @@
-// yagami-submit：矢上小版 防災アートの作品登録 Worker
+// minowa-submit：箕輪小版 防災アートの作品登録 Worker
 //   作品の文章・地点 → Cloudflare D1（テーブル artworks）
-//   作品画像         → Cloudflare R2（バケット yagami-artworks）
+//   作品画像         → Cloudflare R2（バケット minowa-artworks）
 //
 // エンドポイント
 //   POST   /submit          作品の登録（アプリの buildSubmitPayload の形をそのまま受け取る）→ { ok:true, id }
@@ -18,9 +18,13 @@
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;          // 画像の上限（1000px JPEG なら 0.3MB 前後）
 const MAX_TEXT = { field_23: 100, field_24: 500, field_25: 60, Message: 300, Body: 1000, place: 20, collage: 3000, Mabling: 3000, hazard: 500, target: 200, creationDate: 20 };
-// 矢上小版（授業案 rev3）：作者は「クラス＋出席番号」の4桁（4201〜4228）、場所は3か所のどれか
-const NUMBER_RE = /^42(0[1-9]|1[0-9]|2[0-8])$/;
-const PLACES = ["hiyoshi5", "kagami", "yagami"];
+// 箕輪小版：作者は「クラス＋出席番号」の4桁（4年6組 → 4601〜4640）
+const NUMBER_RE = /^46(0[1-9]|[1-3][0-9]|40)$/;
+// 地点の種類：固定5か所のどれか、または「その他」（児童が地図にピンを置いた場所）
+//   ※ workshop/common/places.js の MINOWA_PLACES の id と同じにする
+const PLACES = ["apita", "tsunashima", "conforte", "hiyoshinooka", "pump", "other"];
+// 綱島・日吉周辺：これより外の地点は受け付けない（places.js の MINOWA_AREA と同じ）
+const AREA = { south: 35.525, north: 35.565, west: 139.620, east: 139.670 };
 const TEXT_FIELDS = Object.keys(MAX_TEXT);
 const IMAGE_TYPES = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
 
@@ -39,7 +43,7 @@ export default {
       if (request.method === "GET" && path.startsWith("/images/")) return await getImage(path.slice(8), env, cors);
       if (request.method === "GET" && path === "/export") return await exportAll(request, env, cors, url);
       if (request.method === "DELETE" && path.startsWith("/artworks/")) return await deleteArtwork(request, path.slice(10), env, cors, url);
-      if (request.method === "GET" && path === "/") return json({ ok: true, name: "yagami-submit" }, 200, cors);
+      if (request.method === "GET" && path === "/") return json({ ok: true, name: "minowa-submit" }, 200, cors);
 
       return json({ ok: false, error: "not found" }, 404, cors);
     } catch (e) {
@@ -63,6 +67,9 @@ async function submit(request, env, cors) {
   const lat = Number(body.lat), lon = Number(body.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
     return json({ ok: false, error: "invalid location" }, 400, cors);
+  }
+  if (lat < AREA.south || lat > AREA.north || lon < AREA.west || lon > AREA.east) {
+    return json({ ok: false, error: "location out of area" }, 400, cors);
   }
 
   const props = body.properties && typeof body.properties === "object" ? body.properties : {};
@@ -139,7 +146,7 @@ async function exportAll(request, env, cors, url) {
     headers: {
       ...cors,
       "Content-Type": "application/geo+json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="yagami_artworks_${stamp}.geojson"`,
+      "Content-Disposition": `attachment; filename="minowa_artworks_${stamp}.geojson"`,
       "Cache-Control": "no-store"
     }
   });

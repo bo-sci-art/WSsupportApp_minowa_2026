@@ -1,4 +1,4 @@
-name = "yagami-submit"
+name = "minowa-submit"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 
@@ -8,10 +8,10 @@ ALLOWED_ORIGINS = "https://bo-sci-art.github.io"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "yagami-artworks"
+database_name = "minowa-artworks"
 # ↓ 手順書の「2. D1 を作る」で表示された database_id に書きかえる
-database_id = "9a6f9939-a5fc-4dd0-8881-3bfa1e811e3e"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
 
 [[r2_buckets]]
 binding = "IMAGES"
-bucket_name = "yagami-artworks"
+bucket_name = "minowa-artworks"

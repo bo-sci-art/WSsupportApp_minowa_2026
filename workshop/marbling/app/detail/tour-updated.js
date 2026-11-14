@@ -1,7 +1,7 @@
 // tour.js - Updated for center positioning
 import { GUIDE } from "./tour-config.js";
 
-const LS = { done: id => `tour.${id}.done` };
+const LS = { done: id => `minowa_tour.${id}.done` };
 
 class Tour {
   constructor() {

@@ -25,14 +25,14 @@ const OUT = path.resolve("workshop/present");
 const PLACES = [
   { id: "hiyoshi5", lat: 35.55112, lon: 139.65574 },
   { id: "kagami", lat: 35.54543, lon: 139.65512 },
-  { id: "yagami", lat: 35.55400, lon: 139.65763 }
+  { id: "minowa", lat: 35.55400, lon: 139.65763 }
 ];
 // 見本の作品：既存の防災行動マップ（大人版・10/18 の WS）の作品を、公開されている画像と文章からそのまま使う（読むだけ）
 // 作品73「子どもたちと防災！」を中心に、場所ごとに1作品ずつ
 const SAMPLES = [
   { adultId: "73", place: "hiyoshi5", number: "4201", phase: "事前", hazards: "洪水（外水氾濫）, 高潮, 土砂災害（急傾斜地の崩壊）" },
   { adultId: "54", place: "kagami",   number: "4202", phase: "災害時", hazards: "洪水（外水氾濫）" },
-  { adultId: "67", place: "yagami",   number: "4203", phase: "災害時", hazards: "洪水（外水氾濫）, 高潮" },
+  { adultId: "67", place: "minowa",   number: "4203", phase: "災害時", hazards: "洪水（外水氾濫）, 高潮" },
   // 作品ページの「次の作品」を写すため、日吉五丁目公園にもう1作品
   { adultId: "69", place: "hiyoshi5", number: "4204", phase: "災害時", hazards: "洪水（外水氾濫）" }
 ];
@@ -51,7 +51,7 @@ for (const sm of SAMPLES) {
   const buf = Buffer.from(await fetch(ADULT + "/" + p.images[0]).then(r => r.arrayBuffer()));
   const pl = PLACES.find(x => x.id === sm.place);
   const r = await fetch(`${WORKER}/submit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-    secret: "yagami-ws-20261118", lat: pl.lat, lon: pl.lon, imageBase64: "data:image/jpeg;base64," + buf.toString("base64"), imageExt: "jpg",
+    secret: "minowa-ws-2026", lat: pl.lat, lon: pl.lon, imageBase64: "data:image/jpeg;base64," + buf.toString("base64"), imageExt: "jpg",
     properties: { field_23: sm.phase, field_24: sm.hazards, field_25: sm.number, Message: p.Message, Body: String(p.collage || p.Mabling || "").replace(/^・/gm, ""), place: sm.place }
   }) }).then(r => r.json());
   if (!r.ok) throw new Error("登録できない: " + JSON.stringify(r));
@@ -97,7 +97,7 @@ async function mark(selectors, opts = {}) {
 }
 
 await page.goto(`${APP}/workshop/present/index.html`);
-await page.evaluate(() => { localStorage.setItem("has_seen_map_tutorial_rev3", "true"); });
+await page.evaluate(() => { localStorage.setItem("minowa_has_seen_map_tutorial_rev3", "true"); });
 await page.goto(`${APP}/workshop/present/index.html`);
 await page.waitForSelector(".art-card", { timeout: 15000 });
 await page.waitForTimeout(2500);
@@ -118,7 +118,7 @@ await page.screenshot({ path: path.join(OUT, "guide_03.jpg"), type: "jpeg", qual
 
 // 4：作品のページ
 await page.evaluate(() => document.querySelectorAll(".guide-mark").forEach(e => e.remove()));
-await page.evaluate(() => { localStorage.setItem("has_seen_detail_tutorial_rev3", "true"); });
+await page.evaluate(() => { localStorage.setItem("minowa_has_seen_detail_tutorial_rev3", "true"); });
 await page.click("#art-list-container .art-card");
 await page.waitForURL(/detail\.html/);
 await page.waitForFunction(() => document.getElementById("art-title").textContent.length > 3, null, { timeout: 15000 });

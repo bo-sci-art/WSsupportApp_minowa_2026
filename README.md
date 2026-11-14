@@ -1,11 +1,11 @@
-# WS支援アプリ 矢上小版（2026/11/18 矢上小学校4年2組 出前授業）
+# WS支援アプリ 箕輪小版（2026/11/18 箕輪小学校4年2組 出前授業）
 
-大人向けの WS 支援アプリ（10/18・12/12 の WS 用）を参考に、小学4年生が使えるように作り直した矢上小専用のアプリです。
+大人向けの WS 支援アプリ（10/18・12/12 の WS 用）を参考に、小学4年生が使えるように作り直した箕輪小専用のアプリです。
 大人版のリポジトリ・データ・Worker とは一切つながっていません（コピー元として読んだだけです）。
 
-- 公開 URL（GitHub Pages）：https://bo-sci-art.github.io/WSsupportApp_yagami_2026/
-- 防災行動マップ（保護者向けカードの QR の行き先）：https://bo-sci-art.github.io/WSsupportApp_yagami_2026/workshop/present/
-- 作品の保存先：Cloudflare Worker `yagami-submit`（文章・地点は D1、画像は R2）。準備手順は [docs/cloudflare_setup.md](docs/cloudflare_setup.md)
+- 公開 URL（GitHub Pages）：https://bo-sci-art.github.io/WSsupportApp_minowa_2026/
+- 防災行動マップ（保護者向けカードの QR の行き先）：https://bo-sci-art.github.io/WSsupportApp_minowa_2026/workshop/present/
+- 作品の保存先：Cloudflare Worker `minowa-submit`（文章・地点は D1、画像は R2）。準備手順は [docs/cloudflare_setup.md](docs/cloudflare_setup.md)
 - 言い換え・ルビの一覧：[docs/wording_changes.md](docs/wording_changes.md)
 
 ## 画面の流れ（授業案 rev3 との対応）
@@ -20,7 +20,7 @@
 | | 11:48〜12:00 | マーブリング | S0 の「つづきから」 → S3 マーブリング | `workshop/marbling/app/` |
 | | 12:00〜12:10 | コラージュ | S5 コラージュ | `workshop/collage/app/` |
 | | 12:10〜12:14 | タイトル・伝えたいこと・登録（4分） | S7 タイトル・伝えたいこと・いつの行動か・番号 → S8 確認して登録（1画面） | `workshop/message/artwork/`、`workshop/message/lastconfirm/` |
-| | 12:14〜12:20 | 発表（3か所から1人ずつ） | S9 防災行動マップ（前のスクリーンに映す。場所のボタン、または `?place=hiyoshi5`／`kagami`／`yagami`） | `workshop/present/` |
+| | 12:14〜12:20 | 発表（3か所から1人ずつ） | S9 防災行動マップ（前のスクリーンに映す。場所のボタン、または `?place=hiyoshi5`／`kagami`／`minowa`） | `workshop/present/` |
 | | 12:20〜12:25 | まとめ | | |
 
 授業のあと、保護者は持ち帰りカードの QR から防災行動マップを開き、番号（例 4201）かタイトルで子どもの作品を探す。
@@ -29,7 +29,7 @@
 - いつの行動か：保存する値は「事前／災害時／復旧時」のまま、画面は「災害の前／災害のとき／災害のあと」
 - 作者は「クラス＋出席番号」の4桁（4201〜4228）。Worker でも確かめる
 - 旧授業案のマーブリングの記録（S4）・コラージュの記録（S6）は削除した。D1 の `Mabling`・`collage` 列は空のまま残す
-- 「伝えたいこと」は D1 の `Body` 列、場所は `place` 列（hiyoshi5／kagami／yagami）
+- 「伝えたいこと」は D1 の `Body` 列、場所は `place` 列（hiyoshi5／kagami／minowa）
 
 ## 作品が消えないためのしくみ
 
@@ -43,7 +43,7 @@
 
 - Worker の URL：`workshop/common/config.js`（`DEFAULT_WORKER`）と `workshop/message/lastconfirm/final_submit_script.js`（`WORKER_URL`）
 - 送信用の合言葉：`final_submit_script.js` の `SUBMIT_SECRET`（Worker 側の `SUBMIT_SECRET` と同じ値）
-- 地図の初期位置（矢上小学校の周辺 35.5523, 139.6569）：`map/app/detail/script.js`、`map/Log/log_hazard_map_script.js`、`present/script.js` の `YAGAMI_CENTER` / `defaultCenter`
+- 地図の初期位置（箕輪小学校の周辺 35.5523, 139.6569）：`map/app/detail/script.js`、`map/Log/log_hazard_map_script.js`、`present/script.js` の `MINOWA_CENTER` / `defaultCenter`
 
 ## テスト
 

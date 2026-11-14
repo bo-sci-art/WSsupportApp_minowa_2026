@@ -13,10 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // 矢上小版：作品は Worker（yagami-submit）の GET /artworks、画像は GET /images/:key から読む
+  // 箕輪小版：作品は Worker（minowa-submit）の GET /artworks、画像は GET /images/:key から読む
   //   images[0] は "images/<key>" なので、DATA_BASE + "/" + images[0] がそのまま画像の URL になる
-  const DATA_BASE = (window.YAGAMI_CONFIG && window.YAGAMI_CONFIG.WORKER_URL) || "https://yagami-submit.kazuki131214.workers.dev";
-  const YAGAMI_CENTER = [35.5523, 139.6569];   // 矢上小学校の周辺
+  const DATA_BASE = (window.MINOWA_CONFIG && window.MINOWA_CONFIG.WORKER_URL) || "https://minowa-submit.kazuki131214.workers.dev";
+  const MINOWA_CENTER = [35.5523, 139.6569];   // 箕輪小学校の周辺
   const HIDDEN_IDS = [];   // 非表示にしたい作品idを入れる（取り下げ用の安全弁）
 
   /* ---------- 1. 地図（国土地理院タイル） ---------- */
@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     white: L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {maxZoom:18, attribution:"地理院タイル（淡色地図）"}),
     sat:   L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg", {maxZoom:18, attribution:"地理院タイル（写真）"})
   };
-  const map = L.map("viewDiv", { center:YAGAMI_CENTER, zoom:16, layers:[bases.white], zoomControl:true });
+  const map = L.map("viewDiv", { center:MINOWA_CENTER, zoom:16, layers:[bases.white], zoomControl:true });
   L.control.scale({imperial:false}).addTo(map);
   let curBase = bases.white;
   function setBase(k){
@@ -156,15 +156,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const placeLayer = L.layerGroup().addTo(map);
 
   const ls = (k) => JSON.parse(localStorage.getItem(k) || "[]");
-  const getHearts = () => ls("bousai_hearts");
-  const getActions = () => ls("bousai_actions");
-  const getViewed  = () => ls("bousai_viewed");
+  const getHearts = () => ls("minowa_bousai_hearts");
+  const getActions = () => ls("minowa_bousai_actions");
+  const getViewed  = () => ls("minowa_bousai_viewed");
   const rb = (s) => window.rubyHTML ? window.rubyHTML(s) : s;
 
   // 作品の場所（place が空の古いデータは、座標が近い場所にまとめる）
   function placeOf(f){
     const c = f.geometry && f.geometry.coordinates;
-    return window.yagamiPlaceOf(f.properties.place, c && c[1], c && c[0]);
+    return window.minowaPlaceOf(f.properties.place, c && c[1], c && c[0]);
   }
 
   /* ---------- 4. フィルタ判定 ---------- */
@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function renderMarkers(){
     placeLayer.clearLayers();
-    window.YAGAMI_PLACES.forEach(pl => {
+    window.MINOWA_PLACES.forEach(pl => {
       L.marker([pl.lat, pl.lon], { icon: placeIcon(pl, countAt(pl.id), currentPlace === pl.id), zIndexOffset: currentPlace === pl.id ? 1000 : 0 })
         .on("click", () => selectPlace(pl.id, true))
         .addTo(placeLayer);
@@ -222,7 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderPlaceTabs(){
     const box = document.getElementById("place-tabs");
     if (!box) return;
-    const items = [{ id:"all", short:"すべて", color:"#4f8b80" }].concat(window.YAGAMI_PLACES);
+    const items = [{ id:"all", short:"すべて", color:"#4f8b80" }].concat(window.MINOWA_PLACES);
     box.innerHTML = items.map(pl =>
       '<button type="button" class="place-tab' + (currentPlace === pl.id ? " active" : "") + '" data-place="' + pl.id + '" style="--pc:' + pl.color + '">'
       + '<span class="pt-name">' + rb(pl.short) + '</span><span class="pt-count">' + countAt(pl.id) + '</span></button>'
@@ -234,9 +234,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try { history.replaceState(null, "", id === "all" ? location.pathname : location.pathname + "?place=" + id); } catch(e){}
     applyFilters();
     if (move){
-      const pl = window.yagamiPlace(id);
+      const pl = window.minowaPlace(id);
       if (pl) map.setView([pl.lat, pl.lon], 17);
-      else map.fitBounds(window.yagamiPlacesBounds(), { padding:[60,60], maxZoom:16 });
+      else map.fitBounds(window.minowaPlacesBounds(), { padding:[60,60], maxZoom:16 });
     }
     const lc = document.getElementById("art-list-container");
     if (lc) lc.scrollTop = 0;
@@ -252,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
     listContainer.innerHTML = "";
     const head = document.createElement("div");
     head.className = "list-head";
-    const cur = window.yagamiPlace(currentPlace);
+    const cur = window.minowaPlace(currentPlace);
     head.innerHTML = '<span class="lh-name">' + (cur ? "📍 " + rb(cur.name) : rb("すべての場所{ばしょ}")) + '</span>' + '<span class="lh-count">' + items.length + rb("作品{さくひん}") + '</span>';
     listContainer.appendChild(head);
     if (items.length === 0){
@@ -396,8 +396,8 @@ document.addEventListener("DOMContentLoaded", () => {
       applyFilters();
 
       const qp = new URLSearchParams(location.search).get("place");
-      if (qp && window.yagamiPlace(qp)) selectPlace(qp, true);
-      else map.fitBounds(window.yagamiPlacesBounds(), { padding:[60,60], maxZoom:16 });
+      if (qp && window.minowaPlace(qp)) selectPlace(qp, true);
+      else map.fitBounds(window.minowaPlacesBounds(), { padding:[60,60], maxZoom:16 });
     })
     .catch(err => {
       console.error("作品データの読み込みに失敗", err);
@@ -417,8 +417,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!overlay) return;
     // 授業案 rev3：実際の画面の写真で、マップの見方を4枚で説明する（写真は tools/make_guide_images.mjs で作る）
     const steps = [
-      { title:"① 矢上小{やがみしょう}のみんなの作品{さくひん}", img:"guide_01.jpg?v=1",
-        desc:"矢上小学校{やがみしょうがっこう}4年{ねん}2組{くみ}のみんなが、ハザードマップを読{よ}んで作{つく}った<strong>防災{ぼうさい}アート</strong>がのっています。<br>地図{ちず}のピンには、<strong>場所{ばしょ}の名前{なまえ}と作品{さくひん}の数{かず}</strong>が出{で}ています。" },
+      { title:"① 箕輪小{みのわしょう}のみんなの作品{さくひん}", img:"guide_01.jpg?v=1",
+        desc:"箕輪小学校{みのわしょうがっこう}4年{ねん}2組{くみ}のみんなが、ハザードマップを読{よ}んで作{つく}った<strong>防災{ぼうさい}アート</strong>がのっています。<br>地図{ちず}のピンには、<strong>場所{ばしょ}の名前{なまえ}と作品{さくひん}の数{かず}</strong>が出{で}ています。" },
       { title:"② 場所{ばしょ}を選{えら}ぶ・番号{ばんごう}で探{さが}す", img:"guide_02.jpg?v=1",
         desc:"左上{ひだりうえ}の<strong>場所{ばしょ}のボタン</strong>か、地図{ちず}のピンを押{お}すと、その場所{ばしょ}の作品{さくひん}が並{なら}びます。<br><strong>番号{ばんごう}（例{れい} 4201）</strong>やタイトルでも探{さが}せます。" },
       { title:"③ 作品{さくひん}をタップ", img:"guide_03.jpg?v=1",
@@ -436,9 +436,9 @@ document.addEventListener("DOMContentLoaded", () => {
       dots.forEach((d,i) => d.classList.toggle("active", i === page));
       if (nextBtn) nextBtn.textContent = (page === steps.length-1) ? "とじる" : "つぎへ ＞";
     }
-    const close = () => { try { localStorage.setItem("has_seen_map_tutorial_rev3", "true"); } catch (e) {} overlay.style.display = "none"; };
+    const close = () => { try { localStorage.setItem("minowa_has_seen_map_tutorial_rev3", "true"); } catch (e) {} overlay.style.display = "none"; };
     // はじめて開いたとき（保護者がカードの QR から開いたときなど）は、使い方を自動で出す
-    let seen = false; try { seen = !!localStorage.getItem("has_seen_map_tutorial_rev3"); } catch (e) {}
+    let seen = false; try { seen = !!localStorage.getItem("minowa_has_seen_map_tutorial_rev3"); } catch (e) {}
     if (!seen) { page = 0; update(); overlay.style.display = "flex"; }
     if (helpBtn) helpBtn.onclick = () => { page = 0; update(); overlay.style.display = "flex"; };
     if (nextBtn) nextBtn.onclick = () => { if (page < steps.length-1){ page++; update(); } else close(); };

@@ -172,7 +172,7 @@ function setupDomControls() {
 
   // === Eraser toggle state ===
   let eraserOn = false;
-  let lastNonEraserHex = localStorage.getItem('lastColorHex') || '#FF3B30'; // 初期の戻り色
+  let lastNonEraserHex = localStorage.getItem('minowa_lastColorHex') || '#FF3B30'; // 初期の戻り色
 
   function updateModeButtons() {
     const paintActive = !!config.PAUSED; // PAUSED=true => 塗るモード
@@ -264,7 +264,7 @@ function setupDomControls() {
     }
 
     // lastColorHex も戻り色で更新しておく（次回の“戻り先”にもなる）
-    localStorage.setItem('lastColorHex', backHex);
+    localStorage.setItem('minowa_lastColorHex', backHex);
 
     eraserOn = false;
     document.dispatchEvent(new CustomEvent('color:change'));
@@ -316,7 +316,7 @@ function setupDomControls() {
       const parsed = hexToRgb(foreColorInput.value);
       if (parsed) {
         config.FORE_COLOR = parsed;
-        localStorage.setItem('lastColorHex', foreColorInput.value);
+        localStorage.setItem('minowa_lastColorHex', foreColorInput.value);
         if (PALETTES[paletteName].includes(foreColorInput.value)) {
           updateSwatchActive(foreColorInput.value);
         } else {
@@ -332,7 +332,7 @@ function setupDomControls() {
 
   // --- パレット（既存DOMを使う） ---
   const PALETTES = {
-    // 矢上小版：コラージュと同じ色・同じ並び（水色を追加、薔薇色を赤のとなりに）
+    // 箕輪小版：コラージュと同じ色・同じ並び（水色を追加、薔薇色を赤のとなりに）
     Basic: ['#FF3B30','#FF2D55','#FF9500','#FFCC00','#34C759','#5AC8FA','#007AFF','#5856D6'],
     Pastel: ['#FFD1DC','#B5EAD7','#C7CEEA','#FFDAC1','#E2F0CB','#B5B9FF','#FFB7B2','#FF9CEE','#B28DFF'],
     Warm:   ['#FF3B30','#FF9500','#FFCC00','#FFB7B2','#FFD1DC','#FF9CEE','#FFDAC1','#FF2D55','#FF5E3A'],
@@ -348,7 +348,7 @@ function setupDomControls() {
   const swatchesList  = document.getElementById('swatches');
 
   let paletteName  = 'Basic'; // Basicのみに固定
-  let lastColorHex = localStorage.getItem('lastColorHex') || null;
+  let lastColorHex = localStorage.getItem('minowa_lastColorHex') || null;
 
   if (paletteSelect) paletteSelect.value = paletteName;
 
@@ -372,7 +372,7 @@ function setupDomControls() {
         const rgb = hexToRgb(hex);
         if (rgb) {
           config.FORE_COLOR = rgb;
-          localStorage.setItem('lastColorHex', hex);
+          localStorage.setItem('minowa_lastColorHex', hex);
           updateSwatchActive(hex);
           document.dispatchEvent(new CustomEvent('color:change'));
         }
@@ -403,7 +403,7 @@ function setupDomControls() {
   if (paletteSelect) {
     paletteSelect.addEventListener('change', () => {
       paletteName = paletteSelect.value;
-      localStorage.setItem('paletteName', paletteName);
+      localStorage.setItem('minowa_paletteName', paletteName);
       let currentHex = foreColorInput ? foreColorInput.value : null;
       if (!currentHex || !PALETTES[paletteName].includes(currentHex)) {
         currentHex = PALETTES[paletteName][0];
@@ -595,7 +595,7 @@ async function captureScreenshot () {
   // コラージュ用に一時保存（従来の挙動を維持）
   await idbSet(KEY_LATEST_MARBLING, blob);
 
-  // 矢上小版：iPad へのダウンロードはしない（完成作品を最後に1回だけ保存する）
+  // 箕輪小版：iPad へのダウンロードはしない（完成作品を最後に1回だけ保存する）
   window.__marblingDirty = false;
   return;
   const now = new Date();
@@ -1427,7 +1427,7 @@ async function restoreMarblingToDye() {
 
   // Blob -> ImageBitmap
   const bitmap0 = await createImageBitmap(blob);
-  // 矢上小版：保存画像は「白い背景の上に絵の具を重ねた色」なので、絵の具の量に戻す
+  // 箕輪小版：保存画像は「白い背景の上に絵の具を重ねた色」なので、絵の具の量に戻す
   //   表示は  画素 = 絵の具 + (1 - 絵の具の最大値)  なので、 絵の具 = 画素 - 画素の最小値  で戻せる
   //   あわせて上下を正しい向きにする（WebGL のテクスチャは下から上）
   const cv = document.createElement("canvas");
@@ -2032,7 +2032,7 @@ function hashCode (s) {
 };
 
 // ===== IndexedDB: 画像(Blob)を保存/読み込みする共通ヘルパー =====
-const DB_NAME = "ws_art_db";
+const DB_NAME = "minowa_ws_art_db";
 const STORE_NAME = "images";
 const KEY_LATEST_MARBLING = "latest_marbling_base";
 
@@ -2107,7 +2107,7 @@ if (saveBaseBtn && marbleCanvas) {
 
 
 // =====================================================================
-// 矢上小版：保存と復元
+// 箕輪小版：保存と復元
 //  - 「つぎへ」「もどる」を押すと、かいた絵があれば自動で保存（nav.js から WS_saveMarbling を呼ぶ）
 //  - 何もかいていなければ上書きしない（前の絵を消さない）
 //  - コラージュから戻ってきたときは、前に保存した絵を表示し、そこからかき直せる

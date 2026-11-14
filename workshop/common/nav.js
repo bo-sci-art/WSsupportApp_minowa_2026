@@ -1,4 +1,4 @@
-// workshop/common/nav.js（矢上小版）
+// workshop/common/nav.js（箕輪小版）
 // ヘッダー（もどる／つぎへ・4ステップ表示）を作る。
 // 各ページで window.WS_STEP を定義しておく：
 //   title     : 左に出す画面名（<ruby> を使ってよい）

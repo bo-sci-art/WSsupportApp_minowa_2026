@@ -82,7 +82,7 @@ body{display:flex;height:100%;overflow:hidden;background:var(--base-color);color
 .depth-guide{flex:none}
 .lg-guide-note{font-size:.66em;color:#888;margin-top:4px;line-height:1.5}
 
-/* ===== 矢上小版（子ども向け）：文字とボタンを大きく ===== */
+/* ===== 箕輪小版（子ども向け）：文字とボタンを大きく ===== */
 /* ふりがなが漢字より長くても、漢字の間をあけない（ふりがなを左右にはみ出させる） */
 ruby { display: inline-block; position: relative; text-indent: 0; }
 ruby rt { position: absolute; left: 50%; top: calc(50% - 2.05em); transform: translateX(-50%); font-size: .55em; line-height: 1; white-space: nowrap; letter-spacing: 0; text-align: center; pointer-events: none; }

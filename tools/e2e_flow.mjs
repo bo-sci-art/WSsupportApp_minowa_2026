@@ -131,7 +131,7 @@ async function flow(label, viewport, placeId, number) {
   await shot(page, run, "S0b_resume");
   await page.click("#resumeBtn");
   await page.waitForURL(/marbling\/app/);
-  const savedPlace = await page.evaluate(() => (JSON.parse(localStorage.getItem("hazardMapLog") || "{}").location || {}).place);
+  const savedPlace = await page.evaluate(() => (JSON.parse(localStorage.getItem("minowa_hazardMapLog") || "{}").location || {}).place);
   run.checks.resumeOK = savedPlace === placeId;
   step(`つづきから：タブを閉じて開き直し → マーブリングから再開（${run.checks.resumeWhere}）、場所 ${savedPlace}`);
 
@@ -220,7 +220,7 @@ async function flow(label, viewport, placeId, number) {
     return { scroll: de.scrollHeight - innerHeight, submitVisible: b.bottom <= innerHeight && b.top >= 0, rows: document.querySelectorAll(".s8-row").length, empty: document.querySelectorAll(".s8-row.empty").length };
   });
   const imgInfo = await page.evaluate(async () => {
-    const d = localStorage.getItem("artworkImage");
+    const d = localStorage.getItem("minowa_artworkImage");
     const img = new Image(); img.src = d; await img.decode();
     return { w: img.naturalWidth, h: img.naturalHeight, kb: Math.round(d.length * 0.75 / 1024) };
   });
@@ -239,9 +239,9 @@ async function flow(label, viewport, placeId, number) {
   step(`直す：ボタン「${run.checks.editLabel}」で確認画面にもどった、タイトルが変わった=${run.checks.editBack}`);
 
   // 作り直し（マーブリング・コラージュ）
-  const artNow = () => page.evaluate(() => localStorage.getItem("artworkImage") || "");
+  const artNow = () => page.evaluate(() => localStorage.getItem("minowa_artworkImage") || "");
   const stampCount = () => page.evaluate(() => new Promise(res => {
-    const r = indexedDB.open("ws_art_db", 1);
+    const r = indexedDB.open("minowa_ws_art_db", 1);
     r.onsuccess = () => { const g = r.result.transaction("images").objectStore("images").get("collage_stamps"); g.onsuccess = () => res(((g.result || {}).stamps || []).length); };
   }));
   await page.waitForSelector("#artwork-preview-img", { state: "visible", timeout: 10000 });
@@ -279,7 +279,7 @@ async function flow(label, viewport, placeId, number) {
   page.on("download", () => { downloads++; });
   const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 20000 }), page.click("#btn-submit-artwork")]);
   await page.waitForSelector("#step-complete", { state: "visible", timeout: 20000 });
-  const id = await page.evaluate(() => localStorage.getItem("lastSubmittedArtworkId"));
+  const id = await page.evaluate(() => localStorage.getItem("minowa_lastSubmittedArtworkId"));
   run.submittedId = id;
   run.download = dl.suggestedFilename();
   run.checks.saveButton = await page.locator("#btn-download").count();
@@ -358,7 +358,7 @@ async function samePlaceTen() {
   const img = "data:image/jpeg;base64," + Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString("base64");
   for (let i = 0; i < 10; i++) {
     const r = await fetch(`${WORKER}/submit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-      secret: "yagami-ws-20261118", lat: 35.55112, lon: 139.65574, imageBase64: img, imageExt: "jpg",
+      secret: "minowa-ws-2026", lat: 35.55112, lon: 139.65574, imageBase64: img, imageExt: "jpg",
       properties: { field_23: "事前", field_24: "洪水（外水氾濫）", field_25: String(4211 + i), Message: `${tag} #${i + 1}`, Body: "テスト", place: "hiyoshi5" } }) }).then(r => r.json());
     if (r.ok) t.ids.push(r.id);
   }
@@ -367,7 +367,7 @@ async function samePlaceTen() {
   const page = await (await browser.newContext({ viewport: { width: 1180, height: 820 }, locale: "ja-JP" })).newPage();
   // 手元の Worker を使うように覚えさせる（スタート画面の ?worker= と同じしくみ）
   await page.goto(`${APP}/workshop/start/index.html?worker=${encodeURIComponent(WORKER)}`);
-  await page.evaluate(() => localStorage.setItem("has_seen_map_tutorial_rev3", "true"));
+  await page.evaluate(() => localStorage.setItem("minowa_has_seen_map_tutorial_rev3", "true"));
   await page.goto(`${APP}/workshop/present/index.html?place=hiyoshi5`);
   await page.waitForSelector(`#card-${t.ids[0]}`, { timeout: 15000 });
   t.listed = await page.locator(".art-card").count();
@@ -389,7 +389,7 @@ async function samePlaceTen() {
 }
 
 await flow("landscape", { width: 1180, height: 820 }, "kagami", "4201");
-await flow("portrait", { width: 820, height: 1180 }, "yagami", "4228");
+await flow("portrait", { width: 820, height: 1180 }, "minowa", "4228");
 await samePlaceTen();
 
 fs.writeFileSync(path.resolve("tools/out/report.json"), JSON.stringify(report, null, 2));
@@ -418,7 +418,7 @@ for (const r of report.runs) {
   const sf = c.savedFields || {};
   if (!sf.body || !/^42\d\d$/.test(sf.number || "") || !sf.place || sf.phase !== "災害時") problems.push(`[${r.label}] 保存された値がおかしい ${JSON.stringify(sf)}`);
   if (!c.guide || c.guide.filter(Boolean).length !== 4 || !c.guideClosed) problems.push(`[${r.label}] マップの使い方の写真が出ない／閉じない ${JSON.stringify(c.guide)}`);
-  if (c.saveButton !== 0 || !/^yagami_\d+_42\d\d\.jpg$/.test(r.download || "") || c.downloads !== 1) problems.push(`[${r.label}] 登録したときの自動保存がおかしい（保存ボタン ${c.saveButton}、ファイル ${r.download}、保存 ${c.downloads} 回）`);
+  if (c.saveButton !== 0 || !/^minowa_\d+_42\d\d\.jpg$/.test(r.download || "") || c.downloads !== 1) problems.push(`[${r.label}] 登録したときの自動保存がおかしい（保存ボタン ${c.saveButton}、ファイル ${r.download}、保存 ${c.downloads} 回）`);
   if (c.guideButtons !== 1) problems.push(`[${r.label}] マップの使い方のボタンが ${c.guideButtons} 個（1つにする）`);
   if (!c.mapPlaceActive || c.placePins !== 3) problems.push(`[${r.label}] マップで自分の場所が開かない／ピンが3つでない`);
   if (!c.search.hasMine || !c.search.allMatch) problems.push(`[${r.label}] 番号で探す結果がおかしい ${JSON.stringify(c.search)}`);
