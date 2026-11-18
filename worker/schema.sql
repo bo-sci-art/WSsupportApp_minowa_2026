@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS artworks (
   field_25     TEXT,            -- 作者の番号（クラス＋出席番号の4桁 4601〜4640）
   Message      TEXT,            -- 作品タイトル
   Body         TEXT,            -- この作品で伝えたいこと（授業案 rev3）
-  place        TEXT,            -- 地点の種類（apita / tsunashima / conforte / hiyoshinooka / pump / other）。lat/lon はその地点の座標（other はピンを置いた座標）
+  place        TEXT,            -- 地点の種類（apita / shintsunashima / conforte / hiyoshinooka / pump / other）。lat/lon はその地点の座標（other はピンを置いた座標）
   collage      TEXT,            -- （使わない：旧授業案のコラージュの説明）
   Mabling      TEXT,            -- （使わない：旧授業案のマーブリングの説明）
   hazard       TEXT,            -- （予備：大人版データとの互換用）

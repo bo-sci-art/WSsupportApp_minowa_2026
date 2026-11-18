@@ -8,7 +8,7 @@
  * - field_23 : いつの行動か（事前／災害時／復旧時）
  * - field_24 : 使わない（箕輪小版はハザードマップを選ばない。空のまま送る）
  * - field_25 : 作者の番号（4601〜4640）
- * - place    : 地点の種類（apita / tsunashima / conforte / hiyoshinooka / pump / other）
+ * - place    : 地点の種類（apita / shintsunashima / conforte / hiyoshinooka / pump / other）
  *   lat / lon : 固定5か所はその場所の固定の座標、other は児童が地図に置いたピンの座標
  * - Mabling・collage は使わない（空のまま）
  * 作品画像：localStorage.artworkImage（コラージュの自動保存で作られる）

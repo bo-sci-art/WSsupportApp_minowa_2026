@@ -95,7 +95,7 @@ cd .. && node tools/load_test_30.mjs https://minowa-submit.kazuki131214.workers.
 ## 受け付ける作品（`worker/src/index.js`）
 
 - 番号：4601〜4640（`NUMBER_RE`）。人数が決まったら、ここと `workshop/common/places.js` の `MINOWA_NUMBER_RE` を同じに直す
-- 地点の種類：`apita`／`tsunashima`／`conforte`／`hiyoshinooka`／`pump`／`other`（`PLACES`）
+- 地点の種類：`apita`／`shintsunashima`／`conforte`／`hiyoshinooka`／`pump`／`other`（`PLACES`）
 - 座標：綱島・日吉周辺（北緯 35.525〜35.565、東経 139.620〜139.670）の中だけ（`AREA`）
 
 「運営が確認してから公開」にしたいとき：INSERT 文の `'approved'` を `'pending'` にしてデプロイし、公開するときに次を実行します（`GET /artworks` は `status='approved'` だけを返す）。

@@ -15,7 +15,7 @@
 | ステップ | 画面 | ファイル |
 |---|---|---|
 | | はじめる（途中のデータがあれば「つづきから」） | `workshop/start/` |
-| 1 場所 | 作品にする場所を6つから選ぶ（アピタテラス／綱島駅／コンフォール南日吉／日吉の丘／北綱島ポンプ場／その他）。「その他」は地図をタップしてピンを置き、「ここでいいかな？」で確かめる | `workshop/map/Log/log_hazard_map.html` |
+| 1 場所 | 作品にする場所を6つから選ぶ（アピタテラス／新綱島駅／コンフォール南日吉／日吉の丘／北綱島ポンプ場／その他）。「その他」は地図をタップしてピンを置き、「ここでいいかな？」で確かめる | `workshop/map/Log/log_hazard_map.html` |
 | 2 マーブリング | マーブリング | `workshop/marbling/app/` |
 | 3 コラージュ | コラージュ | `workshop/collage/app/` |
 | 4 メッセージ | タイトル・伝えたいこと・いつの行動か・番号 → 確認して登録（選んだ場所を表示） | `workshop/message/artwork/`、`workshop/message/lastconfirm/` |
@@ -27,7 +27,7 @@
 ## 地点
 
 - 地点の定義と座標：`workshop/common/places.js`（固定5か所の座標は国土地理院の住所検索 API で取得・確認した値。出典はファイルの先頭に書いてある）
-- D1 の `place` 列：`apita`／`tsunashima`／`conforte`／`hiyoshinooka`／`pump`／`other`
+- D1 の `place` 列：`apita`／`shintsunashima`／`conforte`／`hiyoshinooka`／`pump`／`other`
 - `lat`／`lon`：固定5か所はその場所の座標、`other` は児童がピンを置いた座標（場所名は保存しない）
 - 「その他」のピンを置ける範囲（綱島・日吉周辺）：北緯 35.525〜35.565、東経 139.620〜139.670（`places.js` の `MINOWA_AREA` と `worker/src/index.js` の `AREA`。Worker もこの範囲外を受け付けない）
 - 防災行動マップ：固定5か所は「場所のピン（作品の数つき）」、「その他」の作品は作品ごとの小さなピン。「その他」の作品は場所の説明に「その他」と出し、「前の作品／次の作品」の対象にしない（1点ずつ表示）
@@ -77,6 +77,6 @@ node tools/e2e_flow.mjs http://127.0.0.1:8787 local-admin-key-for-test
 node tools/load_test_30.mjs http://127.0.0.1:8787 local-admin-key-for-test 40
 ```
 
-`tools/e2e_flow.mjs` は iPad の画面サイズ（横 1180×820 は固定の地点「綱島駅」、縦 820×1180 は「その他」）で最初から登録・防災行動マップまでを通しで動かし、全画面のスクリーンショットを `tools/out/screens/` に保存します。ルビのない漢字・横のはみ出し・JS エラー・ほかの版の Worker へのアクセスがないかも調べます。テストで登録した作品は最後に DELETE で消します。
+`tools/e2e_flow.mjs` は iPad の画面サイズ（横 1180×820 は固定の地点「新綱島駅」、縦 820×1180 は「その他」）で最初から登録・防災行動マップまでを通しで動かし、全画面のスクリーンショットを `tools/out/screens/` に保存します。ルビのない漢字・横のはみ出し・JS エラー・ほかの版の Worker へのアクセスがないかも調べます。テストで登録した作品は最後に DELETE で消します。
 
 防災行動マップの使い方の写真（`workshop/present/guide_0N.jpg`・`detail_guide_0N.jpg`）は、見本の作品で撮ってあります。授業で作品が登録されたら、本物の作品で撮り直せます（`node tools/make_guide_images.mjs`。使い方はファイルの先頭）。

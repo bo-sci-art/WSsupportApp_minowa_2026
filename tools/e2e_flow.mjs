@@ -423,8 +423,8 @@ async function samePlaceTen() {
   console.log(`[同じ場所に10件] 登録 ${t.ids.length} 件、一覧に ${t.listed} 件、マップから開けた作品 ${t.opened} 件 → ${t.ok ? "OK" : "NG"}（テスト作品は削除）`);
 }
 
-// 横向き：固定の地点（綱島駅）、縦向き：「その他」（地図にピンを置く）
-await flow("landscape", { width: 1180, height: 820 }, "tsunashima", "4601");
+// 横向き：固定の地点（新綱島駅）、縦向き：「その他」（地図にピンを置く）
+await flow("landscape", { width: 1180, height: 820 }, "shintsunashima", "4601");
 await flow("portrait", { width: 820, height: 1180 }, "other", "4640");
 await samePlaceTen();
 
@@ -464,7 +464,7 @@ for (const r of report.runs) {
     if (!r.redo.collageUpdated || r.redo.stampsAfterCollageRedo !== r.redo.stampsAfterMarblingRedo + 1) problems.push(`[${r.label}] コラージュの作り直しが反映されない`);
   }
   const sf = c.savedFields || {};
-  if (!sf.body || !/^46\d\d$/.test(sf.number || "") || sf.place !== (other ? "other" : "tsunashima") || sf.phase !== "災害時") problems.push(`[${r.label}] 保存された値がおかしい ${JSON.stringify(sf)}`);
+  if (!sf.body || !/^46\d\d$/.test(sf.number || "") || sf.place !== (other ? "other" : "shintsunashima") || sf.phase !== "災害時") problems.push(`[${r.label}] 保存された値がおかしい ${JSON.stringify(sf)}`);
   if (!c.savedLatLonOK) problems.push(`[${r.label}] 保存された緯度経度が選んだ地点とちがう ${JSON.stringify(sf)} / ${JSON.stringify(r.pin)}`);
   if (!c.imageServed) problems.push(`[${r.label}] R2 の画像が読めない`);
   if (!c.guide || c.guide.filter(Boolean).length !== 4 || !c.guideClosed) problems.push(`[${r.label}] マップの使い方の写真が出ない／閉じない ${JSON.stringify(c.guide)}`);
@@ -474,7 +474,7 @@ for (const r of report.runs) {
   if (other && (c.otherWorkPins < 1 || !String(c.cardPlace).includes("その他"))) problems.push(`[${r.label}] その他の作品がマップに出ない／「その他」と出ない（${c.otherWorkPins}／${c.cardPlace}）`);
   if (!c.search.hasMine || !c.search.allMatch) problems.push(`[${r.label}] 番号で探す結果がおかしい ${JSON.stringify(c.search)}`);
   const d = c.detail || {};
-  if (other ? (!String(d.place).includes("その他") || d.navVisible) : !String(d.place).includes("綱島駅")) problems.push(`[${r.label}] 作品ページの場所・次の作品がおかしい ${JSON.stringify(d)}`);
+  if (other ? (!String(d.place).includes("その他") || d.navVisible) : !String(d.place).includes("新綱島駅")) problems.push(`[${r.label}] 作品ページの場所・次の作品がおかしい ${JSON.stringify(d)}`);
   if (!d.hazardRowHidden || !d.hzOn) problems.push(`[${r.label}] 作品ページのハザードマップの表示がおかしい ${JSON.stringify(d)}`);
   for (const p of r.pages) for (const f of p.frames) {
     if (f.noRuby.length) problems.push(`[${r.label}] ${p.name} ${f.url}: ルビなし ${JSON.stringify(f.noRuby)}`);

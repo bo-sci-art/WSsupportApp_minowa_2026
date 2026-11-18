@@ -22,7 +22,7 @@ const MAX_TEXT = { field_23: 100, field_24: 500, field_25: 60, Message: 300, Bod
 const NUMBER_RE = /^46(0[1-9]|[1-3][0-9]|40)$/;
 // 地点の種類：固定5か所のどれか、または「その他」（児童が地図にピンを置いた場所）
 //   ※ workshop/common/places.js の MINOWA_PLACES の id と同じにする
-const PLACES = ["apita", "tsunashima", "conforte", "hiyoshinooka", "pump", "other"];
+const PLACES = ["apita", "shintsunashima", "conforte", "hiyoshinooka", "pump", "other"];
 // 綱島・日吉周辺：これより外の地点は受け付けない（places.js の MINOWA_AREA と同じ）
 const AREA = { south: 35.525, north: 35.565, west: 139.620, east: 139.670 };
 const TEXT_FIELDS = Object.keys(MAX_TEXT);

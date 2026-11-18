@@ -4,7 +4,7 @@
  * - 「その他」：地図をタップしてピンを置く（綱島・日吉周辺の枠の中だけ）→「ここでいいかな？」で確かめる
  *   保存するのは緯度経度だけ（場所名は入力させない）
  * - 保存先：localStorage.minowa_hazardMapLog = { location:{ lat, lon, place, name } }
- *   place は apita / tsunashima / conforte / hiyoshinooka / pump / other
+ *   place は apita / shintsunashima / conforte / hiyoshinooka / pump / other
  *   （キーの名前は元のアプリのまま。ハザードマップの選択はなくした）
  */
 

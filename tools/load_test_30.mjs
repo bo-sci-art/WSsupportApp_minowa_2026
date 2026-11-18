@@ -23,7 +23,7 @@ const N = Math.min(40, Number(n0 || 40));   // 番号は 4601〜4640 なので�
 // 箕輪小版：固定5か所＋「その他」（その他は綱島・日吉周辺のばらばらの座標）に順に割り振る
 const PLACES = [
   { id: "apita",        lat: 35.54195,    lon: 139.641434 },
-  { id: "tsunashima",   lat: 35.53674,    lon: 139.63468 },
+  { id: "shintsunashima", lat: 35.536551, lon: 139.636642 },
   { id: "conforte",     lat: 35.546082,   lon: 139.634018 },
   { id: "hiyoshinooka", lat: 35.548008,   lon: 139.642441 },
   { id: "pump",         lat: 35.53960528, lon: 139.65348008 },
