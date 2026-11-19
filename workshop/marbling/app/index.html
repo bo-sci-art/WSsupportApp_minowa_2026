@@ -13,18 +13,24 @@
     mapUrl: null,
     frameSave: 'WS_saveMarbling',
     // 修正完了：コラージュを裏で開いてスタンプをのせ直してから確認画面へ
-    editNext: '../../collage/app/index.html?compose=1'
+    editNext: '../../collage/app/index.html?compose=1',
+    // コラージュの「マーブリングを直す」でもどってきたときの案内（「もどる」の行き先は場所の画面のまま）
+    returnNotice: {
+      param: 'from=collage',
+      badge: '✏️ <ruby>直<rt>なお</rt></ruby>しています',
+      html: 'スタンプは<ruby>消<rt>き</rt></ruby>えないよ。<ruby>直<rt>なお</rt></ruby>したら「つぎへ」でコラージュにもどれるよ'
+    }
   };
 </script>
-<link rel="stylesheet" href="../../common/styles.css?v=minowa5" />
+<link rel="stylesheet" href="../../common/styles.css?v=minowa6" />
 </head>
 <body>
 <main class="stage">
   <div class="frame-wrap">
-    <iframe data-ws-work src="./detail/index.html?v=minowa6" allow="fullscreen" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <iframe data-ws-work src="./detail/index.html?v=minowa8" allow="fullscreen" referrerpolicy="no-referrer-when-downgrade"></iframe>
   </div>
 </main>
 <script src="../../common/progress.js?v=minowa4"></script>
-<script src="../../common/nav.js?v=minowa7"></script>
+<script src="../../common/nav.js?v=minowa8"></script>
 </body>
 </html>
