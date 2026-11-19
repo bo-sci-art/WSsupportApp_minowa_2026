@@ -7,7 +7,7 @@
 
   <!-- ▼ Leaflet（同梱・外部依存なし） -->
   <link rel="stylesheet" href="./leaflet.css">
-  <link rel="stylesheet" href="./style.css?v=minowa11">
+  <link rel="stylesheet" href="./style.css?v=minowa12">
 </head>
 <body>
 
@@ -45,12 +45,12 @@
 
       <div id="sidebar-filter">
 
-        <div class="filter-main-header">
+        <!-- 絞り込みは、トグルに入れず、いつも出しておく（ハザードマップを重ねながら作品を見られるように） -->
+        <div class="filter-main-header filter-main-header--static">
           <span>⚙️ 絞{しぼ}り込{こ}み</span>
-          <span class="toggle-icon closed">﹀</span>
         </div>
 
-        <div class="filter-content closed">
+        <div class="filter-content">
           <div class="filter-group">
             <!-- 箕輪小版：作品ごとの災害は選ばないので「災害の種類」の絞り込みはなくした（ハザードマップを重ねる表示は残す） -->
             <div class="filter-label">ハザードマップ</div>
@@ -117,6 +117,12 @@
             <span><input type="checkbox" id="haz-hightide"><label for="haz-hightide">高潮{たかしお}</label></span>
             <button type="button" class="haz-info" data-k="hightide">?</button>
           </div>
+          <div class="fopt-head">水{みず}が街{まち}からあふれる</div>
+          <div class="fopt-desc">雨{あめ}がたくさんふって、下水{げすい}が水{みず}をながしきれなくなり、マンホールなどから水{みず}があふれます<span class="nowrap">（内水氾濫{ないすいはんらん}）</span></div>
+          <a class="ext-link" href="https://wwwm.city.yokohama.lg.jp/yokohama/Map?mid=65&amp;mpx=139.6416&amp;mpy=35.5424&amp;mps=10000&amp;mtp=dm&amp;gprj=3&amp;mcl=570,770,770,770;570,780,780,780;570,790,790,790;570,800,800,800;570,810,810,810;570,820,820,820;2101,2101,2101,2101" target="_blank" rel="noopener">
+            🔗 横浜市{よこはまし}の「わいわい防災{ぼうさい}マップ」を見{み}る
+            <small>ほかのサイトがひらきます。見{み}おわったら、このページにもどってね</small>
+          </a>
         </div>
       </div>
 
@@ -133,7 +139,7 @@
       <div id="group-jishin" class="hazard-group">
         <div class="hazard-group-header">地震{じしん}</div>
         <div class="hazard-group-content">
-          <a class="ext-link" href="https://wwwm.city.yokohama.lg.jp/yokohama/Map?mid=6&amp;mpx=139.62630111702703&amp;mpy=35.536158445033394&amp;mps=10000&amp;mtp=dm&amp;gprj=3" target="_blank" rel="noopener">
+          <a class="ext-link" href="https://wwwm.city.yokohama.lg.jp/yokohama/Map?mid=6&amp;mpx=139.6416&amp;mpy=35.5424&amp;mps=10000&amp;mtp=dm&amp;gprj=3" target="_blank" rel="noopener">
             🔗 横浜市{よこはまし}の「わいわい防災{ぼうさい}マップ」を見{み}る
             <small>震度{しんど}（地震{じしん}の揺{ゆ}れ）を確認{かくにん}できます（外部{がいぶ}サイト）</small>
           </a>
@@ -151,7 +157,7 @@
   <script src="../common/config.js?v=minowa5"></script>
   <script src="../common/places.js?v=minowa8"></script>
   <script src="../common/ruby.js?v=minowa5"></script>
-  <script src="./script.js?v=minowa11"></script>
+  <script src="./script.js?v=minowa12"></script>
 
   <div id="tutorial-overlay" class="tutorial-overlay" style="display: none;">
     <div class="tutorial-card">

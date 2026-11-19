@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const hazards = {
     flood_l2: { layer:L.tileLayer(HZ+"01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png",{maxZoom:17,opacity:.7,attribution:"重ねるハザードマップ（国土地理院）"}),
       name:"洪水{こうずい}（外水氾濫{がいすいはんらん}）", legend:"shinsui",
-      desc:"・想定{そうてい}最大{さいだい}規模{きぼ}の大雨{おおあめ}により、川{かわ}の水{みず}が堤防{ていぼう}を越{こ}えてまちへ流{なが}れ込{こ}む浸水{しんすい}です。<br>・発生{はっせい}しえるもっとも深{ふか}い場合{ばあい}を示{しめ}しています。" },
+      desc:"・想定{そうてい}最大{さいだい}規模{きぼ}の大雨{おおあめ}により、川{かわ}の水{みず}が堤防{ていぼう}を越{こ}えてまちへ流{なが}れ込{こ}む浸水{しんすい}です。<br>・発生{はっせい}しえるもっとも深{ふか}い場合{ばあい}を示{しめ}しています。<br>・「水{みず}が街{まち}からあふれる（内水氾濫{ないすいはんらん}）」とは、起{お}きる原因{げんいん}がちがいます。" },
     hightide: { layer:L.tileLayer(HZ+"03_hightide_l2_shinsuishin_data/{z}/{x}/{y}.png",{maxZoom:17,opacity:.7,attribution:"重ねるハザードマップ（国土地理院）"}),
       name:"高潮{たかしお}", legend:"shinsui",
       desc:"・台風{たいふう}などによる気圧{きあつ}低下{ていか}と強風{きょうふう}で海面{かいめん}が上昇{じょうしょう}し、海水{かいすい}が陸{りく}へ流{なが}れ込{こ}む浸水{しんすい}です。" },
@@ -374,12 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 絞り込みの開閉
-  const fHeader = document.querySelector(".filter-main-header");
-  if (fHeader) fHeader.onclick = () => {
-    document.querySelector(".filter-content").classList.toggle("closed");
-    document.querySelector(".toggle-icon").classList.toggle("closed");
-  };
+  // 絞り込みは、いつも出しておく（開閉のボタンはなくした）
 
   // 災害種チップに色ドットを付与
   function addCategoryDots(){
