@@ -866,8 +866,11 @@ html, body {
 .art-title { display: block !important; }
 .art-title.art-message { font-size: .95em; line-height: 1.6; margin-bottom: 4px; }
 /* ふりがなが漢字より長くても、漢字の間をあけない（ふりがなを左右にはみ出させる） */
-ruby { display: inline-block; position: relative; text-indent: 0; }
-ruby rt { position: absolute; left: 50%; top: calc(50% - 2.05em); transform: translateX(-50%); font-size: .55em; line-height: 1; white-space: nowrap; letter-spacing: 0; text-align: center; pointer-events: none; }
+/* ふりがな：Safari は rt の position を無視するため、position を使わずに漢字の上にのせる。
+   漢字はベースラインでまわりの文字とそろえる（フォントに関係なく一直線にならぶ。Safari・Chrome で同じ見え方）。
+   rt は幅0・高さ0 で漢字のうしろに置き、margin-left:-50%（＝漢字の幅の半分）で漢字のまん中の上にもどす */
+ruby { display: inline-flex; flex-direction: row; align-items: baseline; line-height: 1; vertical-align: baseline; text-indent: 0; }
+ruby rt { align-self: flex-start; display: flex; justify-content: center; align-items: flex-end; width: 0; height: 0; margin-left: -50%; font-size: .55em; line-height: 1; white-space: nowrap; letter-spacing: 0; text-align: center; transform: translateY(-.15em); pointer-events: none; }
 
 /* 防災行動マップ：ふりがなを軽く（文字が重く見えないように） */
 ruby rt { font-size: .5em; font-weight: 400; color: inherit; opacity: .72; }
@@ -920,3 +923,6 @@ ruby rt { font-size: .5em; font-weight: 400; color: inherit; opacity: .72; }
 /* 箕輪小版：「その他」の作品のピン（作品ごと・押すとその作品のページ） */
 .other-work-pin { background: none; border: 0; }
 .other-work-pin span { --pc: #6b7280; display: block; width: 16px; height: 16px; margin: 0; border-radius: 50%; background: var(--pc); border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.45); cursor: pointer; }
+
+/* 絞り込み：いつも出しておくので、見出しは押せない形にする */
+.filter-main-header--static { cursor: default; }

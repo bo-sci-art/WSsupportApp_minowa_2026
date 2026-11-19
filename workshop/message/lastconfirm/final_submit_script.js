@@ -59,7 +59,7 @@ function locationLatLon(loc) {
 function row(label, valueHTML, editKey, empty) {
     return '<div class="s8-row' + (empty ? ' empty' : '') + '">'
         + '<div class="s8-row-label">' + rb(label) + '</div>'
-        + '<div class="s8-row-value">' + valueHTML + '</div>'
+        + '<div class="s8-row-value' + (/class="s8-tag"/.test(valueHTML) ? ' s8-row-tags' : '') + '">' + valueHTML + '</div>'
         + '<button type="button" class="s8-edit" data-edit="' + editKey + '">✏️ ' + rb('直{なお}す') + '</button>'
         + '</div>';
 }
@@ -100,7 +100,12 @@ function wsIdbGet(key) {
             req.onsuccess = function () {
                 try {
                     const g = req.result.transaction('images', 'readonly').objectStore('images').get(key);
-                    g.onsuccess = function () { resolve(g.result || null); };
+                    g.onsuccess = function () {
+                        var v = g.result || null;
+                        // プライベートモードでは data URL（文字）で保存しているので Blob に戻す
+                        if (typeof v === 'string' && v.indexOf('data:') === 0) { fetch(v).then(function (r) { return r.blob(); }).then(resolve, function () { resolve(null); }); return; }
+                        resolve(v);
+                    };
                     g.onerror = function () { resolve(null); };
                 } catch (e) { resolve(null); }
             };
