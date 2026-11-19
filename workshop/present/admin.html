@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>作品の管理（箕輪小 防災行動マップ）</title>
+  <link rel="stylesheet" href="./leaflet.css">
+  <link rel="stylesheet" href="./admin_style.css?v=admin3">
+</head>
+<body>
+  <header class="adm-header">
+    <h1>作品の管理 <span class="adm-sub">箕輪小 防災行動マップ</span></h1>
+    <div class="adm-header-right">
+      <span id="workerInfo" class="adm-worker"></span>
+      <button type="button" id="logoutBtn" class="btn btn-ghost" hidden>ログアウト（覚えた合言葉を消す）</button>
+      <a href="./index.html" class="btn btn-ghost">← 防災行動マップに戻る</a>
+    </div>
+  </header>
+
+  <!-- 入口（合言葉の入力） -->
+  <main id="loginView" class="adm-login" hidden>
+    <form id="loginForm" class="login-card" autocomplete="off">
+      <h2>合言葉を入れてください</h2>
+      <p class="login-note">Cloudflare の Worker（minowa-submit）に登録した <code>ADMIN_KEY</code> です。</p>
+      <input type="password" id="keyInput" placeholder="合言葉" autocomplete="current-password" required>
+      <label class="login-remember"><input type="checkbox" id="rememberChk"> このPCで覚える</label>
+      <p id="loginError" class="login-error" hidden></p>
+      <button type="submit" id="loginBtn" class="btn btn-primary">入る</button>
+    </form>
+  </main>
+
+  <!-- 一覧 -->
+  <main id="listView" class="adm-main" hidden>
+    <div class="adm-toolbar">
+      <label>場所
+        <select id="placeFilter"><option value="">すべて</option></select>
+      </label>
+      <label>状態
+        <select id="statusFilter">
+          <option value="">すべて</option>
+          <option value="approved">公開中だけ</option>
+          <option value="hidden">非公開だけ</option>
+        </select>
+      </label>
+      <label>並び順
+        <select id="sortOrder">
+          <option value="id">登録した順（id）</option>
+          <option value="number">出席番号の順</option>
+        </select>
+      </label>
+      <input type="search" id="searchInput" placeholder="出席番号・タイトルで検索">
+      <button type="button" id="reloadBtn" class="btn btn-ghost">読み直す</button>
+      <span id="countInfo" class="adm-count"></span>
+    </div>
+
+    <p id="resultMsg" class="adm-result" hidden></p>
+
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th class="c-chk"><input type="checkbox" id="checkAll" title="表示中の作品を全部選ぶ"></th>
+          <th class="c-img">画像</th>
+          <th class="c-id">id</th>
+          <th class="c-num">出席番号</th>
+          <th>タイトル</th>
+          <th class="c-place">場所</th>
+          <th class="c-phase">いつの行動</th>
+          <th class="c-date">登録日時</th>
+          <th class="c-status">状態</th>
+          <th class="c-upd">最終修正</th>
+          <th class="c-edit"></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p id="emptyMsg" class="adm-empty" hidden>作品がありません。</p>
+  </main>
+
+  <!-- 操作ボタン（下に固定） -->
+  <div id="actionBar" class="adm-actionbar" hidden>
+    <div class="sel-btns">
+      <button type="button" id="selectAllBtn" class="btn btn-ghost">全部選ぶ</button>
+      <button type="button" id="selectNoneBtn" class="btn btn-ghost">選ぶのをやめる</button>
+      <span id="selInfo" class="sel-info">0件を選んでいます</span>
+    </div>
+    <div class="act-btns">
+      <button type="button" class="btn btn-show" data-op="show" disabled>公開に戻す</button>
+      <button type="button" class="btn btn-hide" data-op="hide" disabled>非公開にする</button>
+      <button type="button" class="btn btn-delete" data-op="delete" disabled>削除する</button>
+    </div>
+  </div>
+
+  <!-- 確認パネル -->
+  <div id="confirmOverlay" class="adm-overlay" hidden>
+    <div class="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmWarn" class="confirm-warn" hidden>削除した作品は元に戻せません（D1 の行と R2 の画像の両方を消します）。</p>
+      <ul id="confirmList" class="confirm-list"></ul>
+      <p id="confirmProgress" class="confirm-progress" hidden></p>
+      <div class="confirm-btns">
+        <button type="button" id="confirmCancel" class="btn btn-ghost">やめる</button>
+        <button type="button" id="confirmOk" class="btn btn-primary">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 確認・修正パネル -->
+  <div id="editOverlay" class="adm-overlay edit-overlay" hidden>
+    <div class="edit-panel" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <div class="edit-head">
+        <h2 id="editTitle">作品の確認・修正</h2>
+        <button type="button" id="editClose" class="btn btn-ghost">やめる</button>
+      </div>
+      <div class="edit-top">
+        <img id="editImg" class="edit-img" alt="作品の画像">
+        <dl class="edit-meta">
+          <dt>id</dt><dd id="editId"></dd>
+          <dt>状態</dt><dd id="editStatus"></dd>
+          <dt>登録日時</dt><dd id="editCreated"></dd>
+          <dt>最終修正</dt><dd id="editUpdated"></dd>
+        </dl>
+      </div>
+      <p class="edit-note">直したいところを書きかえて、いちばん下の「保存する」を押してください。直したところは黄色になります。</p>
+
+      <form id="editForm" class="edit-form" autocomplete="off" novalidate>
+        <div class="ef" data-field="Message">
+          <label class="ef-label" for="efTitle">タイトル</label>
+          <input type="text" id="efTitle" maxlength="300">
+        </div>
+        <div class="ef" data-field="Body">
+          <label class="ef-label" for="efBody">伝えたいこと</label>
+          <textarea id="efBody" rows="4" maxlength="1000"></textarea>
+        </div>
+        <div class="ef" data-field="place">
+          <div class="ef-label">場所</div>
+          <div id="efPlaces" class="ef-choices ef-places"></div>
+          <p id="efPlaceNote" class="ef-place-note" hidden></p>
+        </div>
+        <!-- 箕輪小版：場所が「その他」のときだけ、ピンの位置を地図で直せる（綱島・日吉周辺の赤い枠の中） -->
+        <div class="ef" data-field="pin" id="efPinBox" hidden>
+          <div class="ef-label">「その他」のピンの位置 <span class="ef-hint">（地図をタップすると、そこに動きます）</span></div>
+          <div id="efPinMap" class="ef-pin-map"></div>
+          <p id="efPinNote" class="ef-pin-note"></p>
+        </div>
+        <div class="ef" data-field="field_23">
+          <div class="ef-label">いつの行動か <span class="ef-hint">（いくつでも）</span></div>
+          <div id="efPhases" class="ef-choices"></div>
+        </div>
+        <div class="ef" data-field="field_25">
+          <label class="ef-label" for="efNumber">出席番号 <span class="ef-hint">（4601〜4640）</span></label>
+          <input type="text" id="efNumber" inputmode="numeric" maxlength="4" pattern="[0-9]*">
+        </div>
+        <p id="editError" class="edit-error" hidden></p>
+        <div class="edit-btns">
+          <button type="button" id="editCancel" class="btn btn-ghost">やめる</button>
+          <button type="submit" id="editSave" class="btn btn-primary">保存する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ページの中の確認（保存してよいか・保存せずに閉じるか） -->
+  <div id="dlgOverlay" class="adm-overlay dlg-overlay" hidden>
+    <div class="confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="dlgTitle">
+      <h2 id="dlgTitle"></h2>
+      <div id="dlgBody" class="dlg-body"></div>
+      <div class="confirm-btns">
+        <button type="button" id="dlgCancel" class="btn btn-ghost">もどる</button>
+        <button type="button" id="dlgOk" class="btn btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common/config.js?v=minowa5"></script>
+  <script src="../common/places.js?v=minowa8"></script>
+  <script src="../common/ruby.js?v=minowa5"></script>
+  <script src="./leaflet.js"></script>
+  <script src="./admin_script.js?v=admin5"></script>
+</body>
+</html>

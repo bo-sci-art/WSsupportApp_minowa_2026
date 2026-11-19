@@ -12,6 +12,7 @@
 //   id    : 保存する値（D1 の place 列）。worker/src/index.js の PLACES と同じにする
 //   name  : 画面に出す名前（ふりがなは 漢字{かな} の書き方。ruby.js が <ruby> にする）
 //   plain : ふりがななしの名前
+//   ※固定5か所の座標を変えるときは、worker/src/index.js の PLACE_COORDS も同じ値にすること（管理画面で場所を直したとき、Worker がこの座標にピンを移す）
 (function () {
   window.MINOWA_PLACES = [
     { id: 'apita',        name: 'アピタテラス',                     plain: 'アピタテラス',       short: 'アピタテラス',                     lat: 35.54195,    lon: 139.641434,   color: '#e8590c' },

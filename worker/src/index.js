@@ -8,6 +8,10 @@
 //   GET    /images/:key     R2 の画像
 //   GET    /export          全作品を GeoJSON でダウンロード（ADMIN_KEY が必要）
 //   DELETE /artworks/:id    作品を1件削除（画像も消す。ADMIN_KEY が必要）
+//   PATCH  /artworks/:id    作品の公開・非公開を切り替える（{ "status": "approved" | "hidden" }。ADMIN_KEY が必要）
+//   PUT    /artworks/:id    作品の情報を直す（番号・タイトル・伝えたいこと・場所・いつの行動か。ADMIN_KEY が必要）
+//                           送られてきた項目だけを直す。画像・status・created_at は変えない。extra.updated_at に直した日時を残す
+//                           場所を「その他」にするときは lat・lon（ピンの位置。AREA の中）もいっしょに送る（下の updateArtwork を参照）
 //
 // シークレット（wrangler secret put で登録）
 //   SUBMIT_SECRET  アプリが送る合言葉（アプリのコードに書かれるので、だれでも見られる）
@@ -27,6 +31,17 @@ const NUMBER_RE = /^46(0[1-9]|[1-3][0-9]|40)$/;
 const PLACES = ["apita", "shintsunashima", "conforte", "hiyoshinooka", "pump", "other"];
 // 綱島・日吉周辺：これより外の地点は受け付けない（places.js の MINOWA_AREA と同じ）
 const AREA = { south: 35.525, north: 35.565, west: 139.620, east: 139.670 };
+// 固定5か所の座標（workshop/common/places.js の MINOWA_PLACES と同じ値にすること）。作品の場所を固定の場所に直したとき、ピンをここに移す
+const PLACE_COORDS = {
+  apita:          { lat: 35.54195,    lon: 139.641434 },
+  shintsunashima: { lat: 35.536551,   lon: 139.636642 },
+  conforte:       { lat: 35.546082,   lon: 139.634018 },
+  hiyoshinooka:   { lat: 35.548008,   lon: 139.642441 },
+  pump:           { lat: 35.53960528, lon: 139.65348008 }
+};
+// いつの行動か（保存する値）。作品を直すときに確かめる（箕輪小版は「見たハザードマップ」field_24 を使わないので直さない）
+const PHASES = ["事前", "災害時", "復旧時"];
+const inArea = (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon) && lat >= AREA.south && lat <= AREA.north && lon >= AREA.west && lon <= AREA.east;
 const TEXT_FIELDS = Object.keys(MAX_TEXT);
 const IMAGE_TYPES = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
 
@@ -45,6 +60,8 @@ export default {
       if (request.method === "GET" && path.startsWith("/images/")) return await getImage(path.slice(8), env, cors);
       if (request.method === "GET" && path === "/export") return await exportAll(request, env, cors, url);
       if (request.method === "DELETE" && path.startsWith("/artworks/")) return await deleteArtwork(request, path.slice(10), env, cors, url);
+      if (request.method === "PATCH" && path.startsWith("/artworks/")) return await setArtworkStatus(request, path.slice(10), env, cors);
+      if (request.method === "PUT" && path.startsWith("/artworks/")) return await updateArtwork(request, path.slice(10), env, cors);
       if (request.method === "GET" && path === "/") return json({ ok: true, name: "minowa-submit" }, 200, cors);
 
       return json({ ok: false, error: "not found" }, 404, cors);
@@ -180,7 +197,12 @@ function toGeoJSON(rows, includeAdmin) {
       };
       if (r.hazard != null) properties.hazard = r.hazard;
       if (r.target != null) properties.target = r.target;
-      if (includeAdmin) properties.created_at = r.created_at;
+      if (includeAdmin) {
+        properties.created_at = r.created_at;
+        const ex = parseExtra(r.extra);
+        if (ex.updated_at) properties.updated_at = ex.updated_at;
+        if (ex.original_pin) properties.original_pin = ex.original_pin;   // 「その他」から固定の場所に直した作品の、もとのピン
+      }
       return { type: "Feature", geometry: { type: "Point", coordinates: [r.lon, r.lat] }, properties };
     })
   };
@@ -216,6 +238,113 @@ async function deleteArtwork(request, idStr, env, cors, url) {
 }
 
 // ---------------------------------------------------------------------------
+// PATCH /artworks/:id（公開・非公開の切り替え。データは消さない）
+// ---------------------------------------------------------------------------
+const STATUSES = ["approved", "hidden"];
+async function setArtworkStatus(request, idStr, env, cors) {
+  if (!isAdmin(request, env)) return json({ ok: false, error: "unauthorized" }, 401, cors);
+  const id = Number(idStr);
+  if (!Number.isInteger(id) || id <= 0) return json({ ok: false, error: "bad id" }, 400, cors);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ ok: false, error: "invalid json" }, 400, cors); }
+  const status = body && typeof body === "object" ? body.status : undefined;
+  if (typeof status !== "string" || STATUSES.indexOf(status) < 0) return json({ ok: false, error: "invalid status" }, 400, cors);
+  const row = await env.DB.prepare(`SELECT id FROM artworks WHERE id = ?1`).bind(id).first();
+  if (!row) return json({ ok: false, error: "not found" }, 404, cors);
+  await env.DB.prepare(`UPDATE artworks SET status = ?1 WHERE id = ?2`).bind(status, id).run();
+  return json({ ok: true, id: String(id), status }, 200, cors);
+}
+
+// ---------------------------------------------------------------------------
+// PUT /artworks/:id（作品の情報を直す。先生が管理画面から使う）
+// ---------------------------------------------------------------------------
+// 箕輪小版：field_24（見たハザードマップ）は使わないので、直せる項目に入れない
+const EDITABLE = ["field_23", "field_25", "Message", "Body", "place"];
+function listOf(v) {
+  if (v === null || v === undefined) return [];
+  const arr = Array.isArray(v) ? v : String(v).split(/[,、]\s*/);
+  return arr.map(x => String(x).trim()).filter(Boolean);
+}
+function parseExtra(t) {
+  if (!t) return {};
+  try { const o = JSON.parse(t); return o && typeof o === "object" && !Array.isArray(o) ? o : {}; } catch (e) { return {}; }
+}
+async function updateArtwork(request, idStr, env, cors) {
+  if (!isAdmin(request, env)) return json({ ok: false, error: "unauthorized" }, 401, cors);
+  const id = Number(idStr);
+  if (!Number.isInteger(id) || id <= 0) return json({ ok: false, error: "bad id" }, 400, cors);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ ok: false, error: "invalid json" }, 400, cors); }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return json({ ok: false, error: "invalid json" }, 400, cors);
+
+  const set = {};
+  for (const k of EDITABLE) {
+    if (!(k in body)) continue;
+    const v = body[k];
+    if (k === "field_23") {
+      const list = listOf(v);
+      const bad = list.filter(x => PHASES.indexOf(x) < 0);
+      if (bad.length) return json({ ok: false, error: "invalid phase", field: k, values: bad }, 400, cors);
+      const joined = Array.from(new Set(list)).join(", ");
+      if (joined.length > MAX_TEXT[k]) return json({ ok: false, error: "too long", field: k, max: MAX_TEXT[k] }, 400, cors);
+      set[k] = joined || null;
+      continue;
+    }
+    if (v !== null && typeof v !== "string" && typeof v !== "number") return json({ ok: false, error: "invalid value", field: k }, 400, cors);
+    const str = v === null ? null : String(v).trim();
+    if (k === "field_25") {
+      if (!str || !NUMBER_RE.test(str)) return json({ ok: false, error: "invalid number", field: k }, 400, cors);
+    } else if (k === "place") {
+      if (!str || PLACES.indexOf(str) < 0) return json({ ok: false, error: "invalid place", field: k }, 400, cors);
+    }
+    if (str !== null && str.length > MAX_TEXT[k]) return json({ ok: false, error: "too long", field: k, max: MAX_TEXT[k] }, 400, cors);
+    set[k] = str === "" ? null : str;
+  }
+  // ピンの位置（「その他」のときだけ使う）
+  const hasPin = ("lat" in body) || ("lon" in body);
+  const pin = hasPin ? { lat: Number(body.lat), lon: Number(body.lon) } : null;
+  if (hasPin && !inArea(pin.lat, pin.lon)) return json({ ok: false, error: "location out of area", field: "lat" }, 400, cors);
+  if (!Object.keys(set).length && !hasPin) return json({ ok: false, error: "nothing to update" }, 400, cors);
+
+  const row = await env.DB.prepare(`SELECT * FROM artworks WHERE id = ?1`).bind(id).first();
+  if (!row) return json({ ok: false, error: "not found" }, 404, cors);
+  const extra = parseExtra(row.extra);
+
+  // 場所と座標（案A）
+  //   固定 → 固定     ：その場所の座標に移す
+  //   その他 → 固定   ：その場所の座標に移し、児童が置いたピンを extra.original_pin に残す（あとで「その他」に戻すとき使う）
+  //   固定 → その他   ：lat・lon（管理画面の地図で置いたピン）が必要。送られてこないときは extra.original_pin を使う。どちらもなければ 400
+  //   その他 → その他 ：lat・lon が送られてきたときだけ、ピンを動かす
+  const newPlace = set.place || row.place;
+  if (newPlace === "other") {
+    if (pin) { set.lat = pin.lat; set.lon = pin.lon; }
+    else if (row.place !== "other") {
+      const op = extra.original_pin;
+      if (op && inArea(Number(op.lat), Number(op.lon))) { set.lat = Number(op.lat); set.lon = Number(op.lon); }
+      else return json({ ok: false, error: "pin required", field: "lat" }, 400, cors);
+    }
+  } else {
+    if (pin) return json({ ok: false, error: "pin only for other", field: "lat" }, 400, cors);
+    if (set.place && set.place !== row.place && PLACE_COORDS[set.place]) {
+      if (row.place === "other" && inArea(Number(row.lat), Number(row.lon))) extra.original_pin = { lat: row.lat, lon: row.lon };
+      set.lat = PLACE_COORDS[set.place].lat; set.lon = PLACE_COORDS[set.place].lon;
+    }
+  }
+  // 直した日時を extra に残す（extra にほかの項目が入っていたら、そのまま残す）
+  extra.updated_at = new Date().toISOString();
+  set.extra = JSON.stringify(extra);
+
+  // 列名は EDITABLE と lat/lon/extra だけ（利用者の文字は bind で渡す）
+  const cols = Object.keys(set);
+  const sql = `UPDATE artworks SET ${cols.map((c, i) => c + " = ?" + (i + 1)).join(", ")} WHERE id = ?${cols.length + 1}`;
+  await env.DB.prepare(sql).bind(...cols.map(c => set[c]), id).run();
+
+  const after = await env.DB.prepare(`SELECT * FROM artworks WHERE id = ?1`).bind(id).first();
+  const feature = toGeoJSON([after], true).features[0];
+  return json({ ok: true, id: String(id), feature, properties: feature.properties }, 200, cors);
+}
+
+// ---------------------------------------------------------------------------
 // 共通
 // ---------------------------------------------------------------------------
 function registrationOpen(env) {
@@ -242,7 +371,7 @@ function corsHeaders(request, env) {
   const allowed = String(env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
   const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
   const h = {
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
