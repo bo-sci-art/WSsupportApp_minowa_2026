@@ -92,5 +92,5 @@
 
 ## 気づいたこと（今回は直していない）
 
-- 防災行動マップの使い方の写真（`guide_0N.jpg`・`detail_guide_0N.jpg`）は、絞り込みをいつも出す前の画面で撮ったもの。撮り直すなら `tools/make_guide_images.mjs`
+- 防災行動マップの使い方の写真（`guide_0N.jpg`・`detail_guide_0N.jpg`）は、移したあとの画面（絞り込みをいつも表示・歯車つき）で、手元の Worker に入れた見本の作品で撮り直した（見本は撮ったあとに消した）。授業の作品で撮り直すときは `tools/make_guide_images.mjs`
 - 本番に、試しに登録された作品が4件ある（id 15〜18）
