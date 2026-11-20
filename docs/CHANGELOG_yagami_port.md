@@ -94,3 +94,14 @@
 
 - 防災行動マップの使い方の写真（`guide_0N.jpg`・`detail_guide_0N.jpg`）は、移したあとの画面（絞り込みをいつも表示・歯車つき）で、手元の Worker に入れた見本の作品で撮り直した（見本は撮ったあとに消した）。授業の作品で撮り直すときは `tools/make_guide_images.mjs`
 - 本番に、試しに登録された作品が4件ある（id 15〜18）
+
+## 本番に出した記録（2026/11/20）
+
+1. 本番の作品7件（id 15〜18・31〜33）を `backups/` に書き出した（git には入れない）
+2. `npx wrangler deploy`：Worker のバージョン `d44b7563`（`REGISTRATION_OPEN = "true"`）。`PUT /artworks/1` が 401 になったことを確かめた
+3. main に push（`ba65c68..138f8f3`）。GitHub Pages で管理画面が開くこと・`config.js` の `REGISTRATION_OPEN = true` を確かめた
+4. 本番での確認
+   - `tools/e2e_flow.mjs`（Chromium）：横向き（新綱島駅）・縦向き（その他）とも、登録 → D1・R2 → 防災行動マップ → 作品ページまで通った。ダウンロードは0回
+   - `tools/test_admin_edit.mjs`：PC の幅はすべて OK（確認・修正の保存・ピンの移動・非公開と公開に戻す）。iPad の幅は「保存しました」まで OK
+   - そのあと、この PC から Cloudflare への通信が何度も切れ（`ECONNRESET`）、残りの確認は終わらなかった（「その他」のピンの直し方は手元の Worker でだけ確かめてある）
+   - 通信が切れたため、「同じ場所に10件」のテスト作品のうち8件（id 38〜45、タイトル「E2E同じ場所-…」）が残ったので、管理用の合言葉で消した。本番の作品は、出す前と同じ7件にもどっている
