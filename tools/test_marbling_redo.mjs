@@ -95,7 +95,16 @@ for (let round = 1; round <= 2; round++) {
   // 箕輪小版：コラージュから直しに来ても、マーブリングの「もどる」は場所の画面のまま（「つぎへ」はコラージュ）
   const dest = await page.evaluate(() => ({ prev: window.WS_STEP.prev, next: window.WS_STEP.next }));
   ok(`[${round}往復目] マーブリングの「もどる」は場所の画面・「つぎへ」はコラージュ`, /\/workshop\/map\/Log\/log_hazard_map\.html$/.test(dest.prev) && /\/workshop\/collage\/app\/index\.html$/.test(dest.next), JSON.stringify(dest));
-  const pass = await page.locator(".ws-return-notice").evaluate(el => getComputedStyle(el).pointerEvents);
+  // 右はしの「×」で案内を消せる（2往復目で押してみる）
+  const closeBtn = page.locator(".ws-return-notice .ws-return-notice__close");
+  ok(`[${round}往復目] 案内の右はしに「×」がある（押せる）`, (await closeBtn.count()) === 1 && (await closeBtn.evaluate(el => getComputedStyle(el).pointerEvents)) !== "none");
+  if (round === 2) {
+    await page.screenshot({ path: path.join(OUT, "marbling_notice_close.png") }).catch(() => {});
+    await closeBtn.click();
+    await page.waitForTimeout(200);
+    ok(`[${round}往復目] 「×」を押すと案内が消える（バッジはそのまま）`, (await page.locator(".ws-return-notice").count()) === 0 && (await page.locator(".ws-header .ws-edit-badge").count()) === 1);
+  }
+  const pass = round === 2 ? "none" : await page.locator(".ws-return-notice").evaluate(el => getComputedStyle(el).pointerEvents);
   ok(`[${round}往復目] 案内の上からでも絵がかける（タップを通す）`, pass === "none");
   // 前の絵がそのまま表示されている（にじんでいない）：保存されている絵と、いまの絵を保存し直したものを比べる
   const before = await savedMarbling(mfr());

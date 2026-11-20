@@ -59,7 +59,14 @@
     var note = document.createElement('div');
     note.className = 'ws-return-notice';
     note.setAttribute('role', 'status');
-    note.innerHTML = RN.html;
+    // 右はしの「×」で案内を消せる（絵をかくじゃまにならないように）。案内の文字の部分はタップを下の絵に通す
+    note.innerHTML = '<span class="ws-return-notice__text">' + RN.html + '</span>' +
+      '<button type="button" class="ws-return-notice__close" aria-label="案内をとじる">×</button>';
+    note.querySelector('.ws-return-notice__close').addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      note.remove();
+      window.removeEventListener('resize', place);
+    });
     header.insertAdjacentElement('afterend', note);
     // ヘッダーのすぐ下に重ねる（絵をかく場所の大きさは変えない。タップは下の絵に通す）
     var place = function () { note.style.top = (header.getBoundingClientRect().bottom + 8) + 'px'; };

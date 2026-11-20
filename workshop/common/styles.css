@@ -336,3 +336,8 @@ main.stage { flex: 1 1 auto; min-height: 0; padding: 0; overflow: hidden; }
 
 /* 別の画面から「直す」ためにもどってきたときの案内（「✏️ 修正中」のバッジと同じ色）。v3 項目2 */
 .ws-return-notice{position:fixed;left:50%;transform:translateX(-50%);z-index:40;max-width:calc(100% - 32px);background:#fde68a;color:#92400e;border-radius:999px;padding:6px 20px;font-size:1.05rem;font-weight:800;line-height:2.1;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.12);pointer-events:none}
+/* 案内の右はしの「×」（押すと案内を消す）。案内の文字はタップを通すが、「×」だけは押せる */
+.ws-return-notice{display:flex;align-items:center;gap:10px;padding-right:6px;width:max-content}
+.ws-return-notice__text{flex:1 1 auto}
+.ws-return-notice__close{pointer-events:auto;flex:none;width:40px;height:40px;border:0;border-radius:50%;background:rgba(146,64,14,.15);color:#92400e;font-size:1.4rem;font-weight:800;line-height:40px;padding:0;cursor:pointer}
+.ws-return-notice__close:active{background:rgba(146,64,14,.3)}
