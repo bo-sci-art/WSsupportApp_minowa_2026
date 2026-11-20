@@ -22,7 +22,7 @@
     { id: 'pump',         name: '北綱島{きたつなしま}ポンプ場{じょう}', plain: '北綱島ポンプ場',   short: '北綱島{きたつなしま}ポンプ場{じょう}', lat: 35.53960528, lon: 139.65348008, color: '#0891b2' }
   ];
   // 「その他」：座標は作品ごとにちがう（ピンを置いた場所）
-  window.MINOWA_OTHER = { id: 'other', name: 'その他{た}', plain: 'その他', short: 'その他{た}', color: '#6b7280', isOther: true };
+  window.MINOWA_OTHER = { id: 'other', name: 'その他{た}', plain: 'その他', short: 'その他{た}', color: '#db2777', isOther: true };
   // 選ぶときに出す6つ（固定5か所＋その他）
   window.MINOWA_CHOICES = window.MINOWA_PLACES.concat([window.MINOWA_OTHER]);
 

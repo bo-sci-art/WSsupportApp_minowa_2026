@@ -226,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ALL.filter(f => isOtherWork(f) && passFilter(f, true)).forEach(f => {
       const c = f.geometry.coordinates;
       L.marker([c[1], c[0]], {
-        icon: L.divIcon({ className: "other-work-pin", html: '<span style="--pc:' + oc + '"></span>', iconSize: [22, 22], iconAnchor: [11, 11] }),
+        icon: L.divIcon({ className: "other-work-pin", html: '<span style="--pc:' + oc + '"></span>', iconSize: [30, 30], iconAnchor: [15, 15] }),
         title: (f.properties.field_25 || "") + " " + (f.properties.Message || "")
       }).on("click", () => { window.location.href = "detail.html?id=" + f.properties.id; })
         .addTo(placeLayer);

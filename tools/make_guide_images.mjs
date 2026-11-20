@@ -97,6 +97,8 @@ await page.click("#art-list-container .art-card");
 await page.waitForURL(/detail\.html/);
 await page.waitForFunction(() => document.getElementById("art-title").textContent.length > 3, null, { timeout: 15000 });
 await page.waitForTimeout(2000);
+// 作品ページの小さな地図のタイルが読み込まれるまで待つ（通信が遅いと灰色のまま写るため）
+await page.waitForFunction(() => { const t = [...document.querySelectorAll("#surrounding-map .leaflet-tile")]; return t.length > 0 && t.every(i => i.complete && i.naturalWidth > 0); }, null, { timeout: 30000 }).catch(() => console.log("  （地図のタイルの読み込みを待ちきれませんでした）"));
 await mark([".dv-info"], { pad: 2, dim: .15 });
 await page.screenshot({ path: path.join(OUT, "guide_04.jpg"), type: "jpeg", quality: 82 });
 
