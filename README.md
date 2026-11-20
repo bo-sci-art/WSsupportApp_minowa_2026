@@ -9,6 +9,8 @@
   - 文章・地点：D1 `minowa-artworks`、画像：R2 `minowa-artworks`
   - 準備・運用の手順は [docs/cloudflare_setup.md](docs/cloudflare_setup.md)
 - 言い換え・ルビの一覧：[docs/wording_changes.md](docs/wording_changes.md)
+- 作品の管理画面（先生用）：https://bo-sci-art.github.io/WSsupportApp_minowa_2026/workshop/present/admin.html （担任の先生向けの使い方は [docs/teacher_edit_guide.md](docs/teacher_edit_guide.md)）
+- 矢上小版 v2・v3 の改善を移した記録：[docs/CHANGELOG_yagami_port.md](docs/CHANGELOG_yagami_port.md)
 
 ## 画面の流れ
 
@@ -16,13 +18,15 @@
 |---|---|---|
 | | はじめる（途中のデータがあれば「つづきから」） | `workshop/start/` |
 | 1 場所 | 作品にする場所を6つから選ぶ（アピタテラス／新綱島駅／コンフォール南日吉／日吉の丘／北綱島ポンプ場／その他）。「その他」は地図をタップしてピンを置き、「ここでいいかな？」で確かめる | `workshop/map/Log/log_hazard_map.html` |
-| 2 マーブリング | マーブリング | `workshop/marbling/app/` |
-| 3 コラージュ | コラージュ | `workshop/collage/app/` |
+| 2 マーブリング | マーブリング（「もどる」は場所の画面） | `workshop/marbling/app/` |
+| 3 コラージュ | コラージュ（「◀ マーブリングを直す」でマーブリングにもどれる。スタンプは消えない） | `workshop/collage/app/` |
 | 4 メッセージ | タイトル・伝えたいこと・いつの行動か・番号 → 確認して登録（選んだ場所を表示） | `workshop/message/artwork/`、`workshop/message/lastconfirm/` |
-| | 防災行動マップ（場所のボタン、または `?place=apita` など） | `workshop/present/` |
+| | 防災行動マップ（場所のボタン、または `?place=apita` など。絞り込みはいつも表示） | `workshop/present/` |
+| | 作品の管理画面（先生用。歯車 ⚙ から） | `workshop/present/admin.html` |
 
 矢上小版からなくした画面：ハザードマップを見る画面（S1）、「1コマ目はここまで」の画面、場所の画面の「読み取ったハザードマップ」の選択、マーブリング・コラージュ中の「ハザードマップ」ボタン。
 防災行動マップの作品ページの「ハザードマップを重ねる」（洪水・高潮・土砂災害をまとめて重ねる）と「この場所の危険性」の説明は残しています。
+防災行動マップの「防災情報」には、洪水・高潮・土砂災害に加えて「水が街からあふれる（内水氾濫）」の説明と、横浜市の「わいわい防災マップ」（内水・地震。中心は固定5か所のまん中あたり）へのリンクがあります。
 
 ## 地点
 
@@ -45,13 +49,16 @@
 - マーブリング：「つぎへ」「もどる」で自動保存。戻ってきたら前の絵を表示し、そこから描き直せる
 - コラージュ：スタンプを置く・動かす・消すたびに自動保存（IndexedDB `minowa_ws_art_db/images/collage_stamps`）
 - 作品画像（長辺1000px JPEG）は `localStorage.minowa_artworkImage` と IndexedDB `artwork_image` の両方に保存。最終確認で見つからないときはマーブリング画像＋スタンプ配置から作り直す
-- iPad への保存は、登録のあとに1回だけ（「ファイル」アプリの「ダウンロード」に入る）
+- 登録したあとに、作品の画像を端末にダウンロードすることはしない（矢上小版 v3 と同じ）
+- iPad の Safari のプライベートモードでは IndexedDB に Blob を保存できないので、そのときは data URL（文字）で保存し、読むときに Blob に戻す
 
 ## 設定を変える場所
 
 - Worker の URL：`workshop/common/config.js`（`DEFAULT_WORKER`）と `workshop/message/lastconfirm/final_submit_script.js`（`WORKER_URL`）
 - 送信用の合言葉：`final_submit_script.js` の `SUBMIT_SECRET`（Worker 側の `SUBMIT_SECRET` と同じ値）
 - 防災行動マップの初期位置：`present/script.js` の `MINOWA_CENTER`
+- 作品の受け付け：`workshop/common/config.js` の `REGISTRATION_OPEN` と `worker/wrangler.toml` の `REGISTRATION_OPEN`（今は両方 `true`＝受け付ける。授業が終わったら両方 `false`。手順は docs/cloudflare_setup.md）
+- 固定5か所の座標を変えるとき：`places.js` と `worker/src/index.js` の `PLACE_COORDS` の両方
 
 ## テスト
 
@@ -76,6 +83,18 @@ node tools/e2e_flow.mjs http://127.0.0.1:8787 local-admin-key-for-test
 ```bash
 node tools/load_test_30.mjs http://127.0.0.1:8787 local-admin-key-for-test 40
 ```
+
+Safari と同じエンジン（WebKit）でも通せます：`BROWSER=webkit node tools/e2e_flow.mjs …`（`PERSIST=1` をつけると、データを残すふつうのブラウザとして動かす。つけないとプライベートモードと同じ）。
+
+ほかのテスト（手元の Worker とアプリを動かしてから。どれもテストで登録した作品は最後に消す）：
+
+| テスト | 確かめること |
+|---|---|
+| `node tools/test_collage_tap.mjs` | コラージュでタップした位置にスタンプが置かれる（向きを変えても・もどったあとも） |
+| `node tools/test_marbling_redo.mjs` | コラージュの途中で「マーブリングを直す」→ もどってもスタンプが残る・マーブリングの「もどる」は場所の画面 |
+| `node tools/test_edit_api.mjs` | Worker の `PUT`・`PATCH`・`DELETE`（「その他」の座標の4通りの直し方も） |
+| `node tools/test_admin_edit.mjs` | 管理画面の確認・修正パネル（PC と iPad 縦。「その他」のピンを地図で置く） |
+| `node tools/test_registration_switch.mjs … --worker open`／`--worker closed` | 受け付けの切りかえ（closed は `npx wrangler dev --local --var REGISTRATION_OPEN:false` で動かした Worker で） |
 
 `tools/e2e_flow.mjs` は iPad の画面サイズ（横 1180×820 は固定の地点「新綱島駅」、縦 820×1180 は「その他」）で最初から登録・防災行動マップまでを通しで動かし、全画面のスクリーンショットを `tools/out/screens/` に保存します。ルビのない漢字・横のはみ出し・JS エラー・ほかの版の Worker へのアクセスがないかも調べます。テストで登録した作品は最後に DELETE で消します。
 

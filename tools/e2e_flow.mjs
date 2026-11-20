@@ -14,9 +14,17 @@
 // あわせて「同じ場所に10件登録してマップから全部開けるか」も確かめる。
 // テストで登録した作品は最後に DELETE で消し、消えたことを確かめる。
 
-import { chromium } from "playwright";
+import { chromium, webkit, devices } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
+// BROWSER=webkit で Safari と同じエンジンで動かす（iPad の Safari の確認用）。
+//   ふつうは毎回まっさらな状態（Safari のプライベートモードと同じく、IndexedDB に Blob を保存できない）。
+//   PERSIST=1 をつけると、データを残すふつうのブラウザとして動かす。
+const ENGINE = process.env.BROWSER === "webkit" ? "webkit" : "chromium";
+const PERSIST = process.env.PERSIST === "1";
+// 画面の移動を待つ：WebKit は地図のタイルの読み込みが終わるまで load が来ないことがあるので、DOM ができたら進む
+const NAV = { waitUntil: "domcontentloaded" };
 
 const args = process.argv.slice(2);
 const WORKER = (args[0] || "http://127.0.0.1:8787").replace(/\/+$/, "");
@@ -25,7 +33,8 @@ const APP = (args.includes("--app") ? args[args.indexOf("--app") + 1] : "http://
 const OUT = path.resolve("tools/out/screens");
 fs.mkdirSync(OUT, { recursive: true });
 
-const report = { worker: WORKER, app: APP, runs: [] };
+const report = { worker: WORKER, app: APP, engine: ENGINE + (PERSIST ? "（データを残す）" : "（まっさら）"), runs: [] };
+console.log("ブラウザ:", report.engine);
 
 // ルビのない漢字・横のはみ出しを調べる（各フレームで実行）
 const CHECK = () => {
@@ -82,8 +91,17 @@ async function flow(label, viewport, placeId, number) {
   report.runs.push(run);
   const step = (s) => { run.steps.push(s); console.log(`[${label}] ${s}`); };
 
-  const browser = await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, acceptDownloads: true, locale: "ja-JP" });
+  const opts = { viewport, deviceScaleFactor: 2, acceptDownloads: true, locale: "ja-JP" };
+  if (ENGINE === "webkit") Object.assign(opts, { userAgent: devices["iPad Pro 11"].userAgent, hasTouch: true });
+  let browser, ctx;
+  if (PERSIST) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ws-e2e-"));
+    ctx = await (ENGINE === "webkit" ? webkit : chromium).launchPersistentContext(dir, ENGINE === "webkit" ? opts : { ...opts, args: ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
+    browser = { close: () => ctx.close() };
+  } else {
+    browser = ENGINE === "webkit" ? await webkit.launch() : await chromium.launch({ args: ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"] });
+    ctx = await browser.newContext(opts);
+  }
   let page = await ctx.newPage();
   const watch = (p) => {
     p.on("pageerror", e => run.errors.push(`${p.url().replace(APP, "")}: ${e.message}`));
@@ -100,7 +118,7 @@ async function flow(label, viewport, placeId, number) {
   await page.click("#startBtn");
 
   // S1 場所（6つのボタン：固定5か所＋その他）
-  await page.waitForURL(/map\/Log\/log_hazard_map/);
+  await page.waitForURL(/workshop\/map\/Log\/log_hazard_map/, NAV);
   await page.waitForTimeout(800);
   run.checks.s1Buttons = await page.locator(".place-btn").count();
   run.checks.s1Markers = await page.locator(".place-marker").count();
@@ -141,7 +159,7 @@ async function flow(label, viewport, placeId, number) {
   await page.click("#nextBtn");
 
   // 休み時間：タブを閉じて開き直す → 「つづきから」（「1コマ目はここまで」の画面はなくした）
-  await page.waitForURL(/marbling\/app/);
+  await page.waitForURL(/workshop\/marbling\/app\//, NAV);
   await page.waitForTimeout(1000);
   await page.close();
   page = await ctx.newPage();
@@ -151,7 +169,7 @@ async function flow(label, viewport, placeId, number) {
   run.checks.resumeWhere = (await page.locator("#resumeWhere").innerText()).replace(/\s+/g, "");
   await shot(page, run, "S0b_resume");
   await page.click("#resumeBtn");
-  await page.waitForURL(/marbling\/app/);
+  await page.waitForURL(/workshop\/marbling\/app\//, NAV);
   const savedPlace = await page.evaluate(() => (JSON.parse(localStorage.getItem("minowa_hazardMapLog") || "{}").location || {}).place);
   run.checks.resumeOK = savedPlace === placeId;
   run.checks.marblingStepper = await page.evaluate(() => [...document.querySelectorAll(".ws-stepper__label")].map(e => { const c = e.cloneNode(true); c.querySelectorAll("rt").forEach(x => x.remove()); return c.textContent; }).join("/"));
@@ -177,7 +195,7 @@ async function flow(label, viewport, placeId, number) {
   await page.click("#nextBtn");
 
   // S5 コラージュ（スタンプを2つ置く）
-  await page.waitForURL(/collage\/app/);
+  await page.waitForURL(/workshop\/collage\/app\//, NAV);
   const cfr = () => page.frames().find(f => f.url().includes("collage/app/detail"));
   await page.waitForTimeout(1500);
   const cl = page.frameLocator("iframe[data-ws-work]");
@@ -209,12 +227,14 @@ async function flow(label, viewport, placeId, number) {
 
   // マーブリングに戻って描き足す（スタンプが消えないこと）
   await page.click("#backBtn");
-  await page.waitForURL(/marbling\/app/);
+  await page.waitForURL(/workshop\/marbling\/app\//, NAV);
   await page.waitForTimeout(2000);
   await paint(5);
   await page.click("#nextBtn");
-  await page.waitForURL(/collage\/app/);
-  await page.waitForTimeout(2000);
+  await page.waitForURL(/workshop\/collage\/app\//, NAV);
+  // 保存したスタンプの読み込みが終わるまで待つ（WebKit は時間がかかることがある）
+  await page.waitForFunction(() => { const f = document.querySelector("iframe[data-ws-work]"); try { return f && f.contentWindow && f.contentWindow.WS_isReady; } catch (e) { return false; } }, null, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(500);
   const stampsAfter = await cfr().evaluate(() => stamps.length);
   run.checks.alphaKept = await cfr().evaluate(() => stamps.length ? Math.round(stamps[stamps.length - 1].alpha * 100) / 100 : null);
   run.restore = { stampsBefore, stampsAfter };
@@ -222,7 +242,7 @@ async function flow(label, viewport, placeId, number) {
   await page.click("#nextBtn");
 
   // S7 タイトル・伝えたいこと・いつの行動か・番号
-  await page.waitForURL(/message\/artwork/);
+  await page.waitForURL(/workshop\/message\/artwork\//, NAV);
   await page.fill("#artworkTitle", `E2Eテスト（${label}）大雨のときは早めに高いところへ！`);
   await page.fill("#artworkBody", "大雨で川があふれそうなときは、家族といっしょに早めに高い場所へ避難してほしいです。");
   await page.locator(".phase-option").nth(1).click();
@@ -236,7 +256,7 @@ async function flow(label, viewport, placeId, number) {
   await page.click("#nextBtn");
 
   // S8 確認して登録（スクロールなしで「登録する」が見える）
-  await page.waitForURL(/lastconfirm/);
+  await page.waitForURL(/workshop\/message\/lastconfirm\//, NAV);
   await page.waitForSelector("#artwork-preview-img", { state: "visible", timeout: 10000 });
   run.checks.s8 = await page.evaluate(() => {
     const de = document.documentElement, b = document.getElementById("btn-submit-artwork").getBoundingClientRect();
@@ -253,11 +273,11 @@ async function flow(label, viewport, placeId, number) {
 
   // 「直す」→ S7（修正中）→「修正完了」で確認画面にもどる
   await page.locator(".s8-edit").first().click();
-  await page.waitForURL(/artwork_submit\.html\?edit=1/);
+  await page.waitForURL(/workshop\/message\/artwork\/artwork_submit\.html\?edit=1/, NAV);
   run.checks.editLabel = (await page.locator("#nextBtn").innerText()).replace(/\s+/g, "");
   await page.fill("#artworkTitle", `E2Eテスト（${label}）警報が出たら早めに高い場所へ`);
   await page.click("#nextBtn");
-  await page.waitForURL(/lastconfirm/);
+  await page.waitForURL(/workshop\/message\/lastconfirm\//, NAV);
   run.checks.editBack = (await page.locator(".s8-v-title").innerText()).includes("警報が出たら");
   step(`直す：ボタン「${run.checks.editLabel}」で確認画面にもどった、タイトルが変わった=${run.checks.editBack}`);
 
@@ -270,26 +290,26 @@ async function flow(label, viewport, placeId, number) {
   await page.waitForSelector("#artwork-preview-img", { state: "visible", timeout: 10000 });
   const art0 = await artNow();
   await page.click(`[onclick="redoWork('marblingApp')"]`);
-  await page.waitForURL(/marbling\/app\/index\.html\?edit=1/);
+  await page.waitForURL(/workshop\/marbling\/app\/index\.html\?edit=1/, NAV);
   await page.waitForTimeout(2000);
   const editUI = await page.evaluate(() => ({ next: (document.getElementById("nextBtn") || {}).textContent || "", back: !!document.getElementById("backBtn"), badge: !!document.querySelector(".ws-edit-badge") }));
   await shot(page, run, "S8c_redo_marbling");
   await paint(1);
   await page.click("#nextBtn");
-  await page.waitForURL(/lastconfirm/, { timeout: 20000 });
+  await page.waitForURL(/workshop\/message\/lastconfirm\//, { ...NAV, timeout: 20000 });
   await page.waitForSelector("#artwork-preview-img", { state: "visible", timeout: 10000 });
   const art1 = await artNow();
   const stamps1 = await stampCount();
   step(`作り直し（マーブリング）：確認画面にもどった・作品画像 ${art1 !== art0 ? "更新" : "そのまま"}・スタンプ ${stamps1} 個`);
   await page.click(`[onclick="redoWork('collageApp')"]`);
-  await page.waitForURL(/collage\/app\/index\.html\?edit=1/);
+  await page.waitForURL(/workshop\/collage\/app\/index\.html\?edit=1/, NAV);
   await page.waitForTimeout(2000);
   const st2 = await page.frameLocator("iframe[data-ws-work]").locator("#stage").boundingBox();
   await page.frameLocator("iframe[data-ws-work]").locator(".thumb").nth(0).click();
   await page.mouse.click(st2.x + st2.width * 0.5, st2.y + st2.height * 0.7);
   await page.waitForTimeout(800);
   await page.click("#nextBtn");
-  await page.waitForURL(/lastconfirm/, { timeout: 20000 });
+  await page.waitForURL(/workshop\/message\/lastconfirm\//, { ...NAV, timeout: 20000 });
   await page.waitForSelector("#artwork-preview-img", { state: "visible", timeout: 10000 });
   const art2 = await artNow();
   const stamps2 = await stampCount();
@@ -300,20 +320,21 @@ async function flow(label, viewport, placeId, number) {
   // 登録すると、作品がこの端末に自動で保存される（保存ボタンはない）
   let downloads = 0;
   page.on("download", () => { downloads++; });
-  const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 20000 }), page.click("#btn-submit-artwork")]);
+  // 矢上 e0b3c59：登録しても、作品をこの端末にダウンロードしない（保存ボタンも、保存のメッセージも出ない）
+  await page.click("#btn-submit-artwork");
   await page.waitForSelector("#step-complete", { state: "visible", timeout: 20000 });
   const id = await page.evaluate(() => localStorage.getItem("minowa_lastSubmittedArtworkId"));
   run.submittedId = id;
-  run.download = dl.suggestedFilename();
   run.checks.saveButton = await page.locator("#btn-download").count();
+  run.checks.saveNote = await page.locator("#download-note").count() + await page.getByText("端末に保存").count();
   await shot(page, run, "S8b_done");
-  step(`S8 登録：id=${id}、端末に自動で保存：${run.download}、保存ボタン ${run.checks.saveButton} 個`);
+  step(`S8 登録：id=${id}、ダウンロード ${downloads} 回、保存ボタン ${run.checks.saveButton} 個、保存のメッセージ ${run.checks.saveNote} 個`);
   // 画面を開き直しても、もう一度は保存しない（二重に保存しない）
   await page.reload();
   await page.waitForSelector("#step-complete", { state: "visible", timeout: 10000 });
   await page.waitForTimeout(1500);
   run.checks.downloads = downloads;
-  step(`開き直したあとの保存の回数：${downloads} 回（1回なら二重に保存していない）`);
+  step(`開き直したあとのダウンロードの回数：${downloads} 回（0回ならよい）`);
   const saved = await fetch(`${WORKER}/artworks`).then(r => r.json());
   const mine = saved.features.find(f => f.properties.id === id);
   run.checks.savedFields = mine && { place: mine.properties.place, number: mine.properties.field_25, phase: mine.properties.field_23, body: !!mine.properties.Body, field_24: mine.properties.field_24, lat: mine.geometry.coordinates[1], lon: mine.geometry.coordinates[0], image: (mine.properties.images || [])[0] };
@@ -323,7 +344,7 @@ async function flow(label, viewport, placeId, number) {
 
   // S9 防災行動マップ（自分の場所が開く）
   await page.click("#btn-goto-map");
-  await page.waitForURL(/present\/index/);
+  await page.waitForURL(/workshop\/present\/index/, NAV);
   // はじめて開いたので、マップの使い方（写真つき4枚）が自動で出る
   await page.waitForSelector("#tutorial-overlay", { state: "visible", timeout: 10000 });
   run.checks.guide = [];
@@ -351,7 +372,7 @@ async function flow(label, viewport, placeId, number) {
   step(`番号で探す：「${number}」→ ${run.checks.search.count} 件（自分の作品あり=${run.checks.search.hasMine}、全部同じ番号=${run.checks.search.allMatch}）`);
   await page.fill("#art-search", "");
   await page.click(`#card-${id}`);
-  await page.waitForURL(/detail\.html/);
+  await page.waitForURL(/workshop\/present\/detail\.html/, NAV);
   await page.waitForTimeout(1500);
   await shot(page, run, "S9b_detail_tutorial");
   // 作品ページの使い方（3ページ）を「つぎへ」で最後まで進めて閉じる
@@ -411,7 +432,7 @@ async function samePlaceTen() {
     await page.goto(`${APP}/workshop/present/index.html?place=apita`);
     await page.waitForSelector(`#card-${id}`, { timeout: 15000 });
     await page.click(`#card-${id}`);
-    await page.waitForURL(/detail\.html/);
+    await page.waitForURL(/workshop\/present\/detail\.html/, NAV);
     await page.waitForFunction(() => document.getElementById("art-title").textContent.length > 1, null, { timeout: 10000 });
     if ((await page.locator("#art-title").innerText()).startsWith(tag)) t.opened++;
   }
@@ -468,7 +489,7 @@ for (const r of report.runs) {
   if (!c.savedLatLonOK) problems.push(`[${r.label}] 保存された緯度経度が選んだ地点とちがう ${JSON.stringify(sf)} / ${JSON.stringify(r.pin)}`);
   if (!c.imageServed) problems.push(`[${r.label}] R2 の画像が読めない`);
   if (!c.guide || c.guide.filter(Boolean).length !== 4 || !c.guideClosed) problems.push(`[${r.label}] マップの使い方の写真が出ない／閉じない ${JSON.stringify(c.guide)}`);
-  if (c.saveButton !== 0 || !/^minowa_\d+_46\d\d\.jpg$/.test(r.download || "") || c.downloads !== 1) problems.push(`[${r.label}] 登録したときの自動保存がおかしい（保存ボタン ${c.saveButton}、ファイル ${r.download}、保存 ${c.downloads} 回）`);
+  if (c.saveButton !== 0 || c.saveNote !== 0 || c.downloads !== 0) problems.push(`[${r.label}] 登録したときに端末に保存している（保存ボタン ${c.saveButton}、保存のメッセージ ${c.saveNote}、ダウンロード ${c.downloads} 回）`);
   if (c.guideButtons !== 1) problems.push(`[${r.label}] マップの使い方のボタンが ${c.guideButtons} 個（1つにする）`);
   if (!c.mapPlaceActive || c.placePins !== 5 || c.placeTabs !== 7) problems.push(`[${r.label}] マップで自分の場所が開かない／ピン5つ・ボタン7つでない（${c.placePins}/${c.placeTabs}）`);
   if (other && (c.otherWorkPins < 1 || !String(c.cardPlace).includes("その他"))) problems.push(`[${r.label}] その他の作品がマップに出ない／「その他」と出ない（${c.otherWorkPins}／${c.cardPlace}）`);
