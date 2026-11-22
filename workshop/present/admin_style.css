@@ -78,7 +78,7 @@ code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; }
 .c-img { width: 76px; }
 .c-img img { width: 64px; height: 48px; object-fit: cover; border-radius: 4px; background: #e5e7eb; display: block; }
 .c-id { width: 56px; }
-.c-num { width: 80px; }
+.c-num { width: 120px; overflow-wrap: anywhere; }
 .c-place { width: 170px; }
 .c-phase { width: 110px; }
 .c-date { width: 140px; white-space: nowrap; }
@@ -142,7 +142,7 @@ ruby rt { align-self: flex-start; display: flex; justify-content: center; align-
 .ef-hint { font-weight: 400; color: #6b7280; font-size: 13px; }
 .ef input[type=text], .ef textarea { width: 100%; font: inherit; font-size: 16px; padding: 9px 11px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
 .ef textarea { resize: vertical; line-height: 1.7; }
-#efNumber { width: 9em; letter-spacing: .1em; font-weight: 700; }
+#efNumber { width: 14em; max-width: 100%; font-weight: 700; }
 .ef-choices { display: flex; flex-wrap: wrap; gap: 8px; }
 .ef-choice { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #d1d5db; border-radius: 10px; padding: 14px 12px 8px; cursor: pointer; background: #fff; line-height: 1.9; font-size: 15px; }
 .ef-choice input { width: 20px; height: 20px; margin: 0; flex: none; }

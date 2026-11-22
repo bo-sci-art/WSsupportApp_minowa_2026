@@ -56,8 +56,16 @@
     for (var i = 0; i < window.MINOWA_PHASES.length; i++) if (window.MINOWA_PHASES[i].value === v) return window.MINOWA_PHASES[i].label;
     return v || '';
   };
-  // 作者の番号：クラス＋出席番号の4桁（4年6組 → 4601〜4640）。worker/src/index.js の NUMBER_RE と同じにする
-  window.MINOWA_NUMBER_RE = /^46(0[1-9]|[1-3][0-9]|40)$/;
+  // 作者のペンネーム（出席番号は使わない。使うには保護者の許可がいるため）。worker/src/index.js の penName と同じ決まりにする
+  //   1〜10文字。空白は1つにまとめ、前後の空白はとる。改行や制御文字は入れない。だれかと同じでもよい
+  window.MINOWA_PENNAME_MAX = 10;
+  // 決まりに合えば整えたペンネーム、合わなければ null
+  window.minowaPenName = function (v) {
+    if (v === null || v === undefined) return null;
+    var s = String(v).replace(/[\s\u3000]+/g, ' ').trim();
+    if (!s || /[\u0000-\u001F\u007F]/.test(s) || Array.from(s).length > window.MINOWA_PENNAME_MAX) return null;
+    return s;
+  };
   // 地図に固定5か所が全部入る範囲
   window.minowaPlacesBounds = function () {
     return window.MINOWA_PLACES.map(function (p) { return [p.lat, p.lon]; });

@@ -107,7 +107,7 @@
     return /^https?:/.test(img) ? img : WORKER + "/" + String(img).replace(/^\/+/, "");
   }
   function itemLabel(p) {
-    return "id " + p.id + "　" + (p.field_25 || "番号なし") + "　「" + (p.Message || "（タイトルなし）") + "」";
+    return "id " + p.id + "　" + (p.field_25 || "ペンネームなし") + "　「" + (p.Message || "（タイトルなし）") + "」";
   }
 
   // ---------------- 一覧 ----------------
@@ -115,7 +115,7 @@
     var place = $("placeFilter").value;
     var status = $("statusFilter").value;
     var q = $("searchInput").value.trim().toLowerCase();
-    var byNumber = $("sortOrder").value === "number";
+    var byName = $("sortOrder").value === "penname";
     return items.filter(function (p) {
       if (place) {
         var pl = window.minowaPlaceOf ? window.minowaPlaceOf(p.place, Number(p.lat), Number(p.lon)) : null;
@@ -129,10 +129,12 @@
       }
       return true;
     }).sort(function (a, b) {
-      // 並び順：出席番号の順（番号のない作品は最後、同じ番号は id の順）／登録した順（id）
-      if (byNumber) {
-        var na = Number(a.field_25) || Infinity, nb = Number(b.field_25) || Infinity;
-        if (na !== nb) return na < nb ? -1 : 1;
+      // 並び順：ペンネームの順（あいうえお順。ペンネームのない作品は最後、同じペンネームは id の順）／登録した順（id）
+      if (byName) {
+        var na = String(a.field_25 || ""), nb = String(b.field_25 || "");
+        if (!na !== !nb) return na ? -1 : 1;
+        var c = na.localeCompare(nb, "ja");
+        if (c) return c;
       }
       return Number(a.id) - Number(b.id);
     });
@@ -342,7 +344,7 @@
   // ---------------- 確認・修正パネル ----------------
   // 箕輪小版：「見たハザードマップ」（field_24）は使わないので、パネルに出さない。
   // pin は「その他」のピンの位置（"緯度,経度"。D1 の lat・lon）。場所が「その他」のときだけ使う
-  var FIELD_NAMES = { field_25: "出席番号", Message: "タイトル", Body: "伝えたいこと", place: "場所", pin: "ピンの位置", field_23: "いつの行動か" };
+  var FIELD_NAMES = { field_25: "ペンネーム", Message: "タイトル", Body: "伝えたいこと", place: "場所", pin: "ピンの位置", field_23: "いつの行動か" };
   var MAX = { Message: 300, Body: 1000 };
   var editing = null;     // { id, orig: {...} }
   var saving = false;
@@ -424,7 +426,7 @@
     var order = function (list, all) { return all.filter(function (v) { return list.indexOf(v) >= 0; }); };
     var place = pl ? pl.value : "";
     return {
-      field_25: $("efNumber").value.trim(),
+      field_25: window.minowaPenName($("efNumber").value) || $("efNumber").value.trim(),
       Message: $("efTitle").value.trim(),
       Body: $("efBody").value.trim(),
       place: place,
@@ -511,7 +513,7 @@
 
   // 画面の中で先に確かめる
   function validate(v) {
-    if (!window.MINOWA_NUMBER_RE.test(v.field_25)) return "出席番号は 4601〜4640 の4けたの数字で入れてください。";
+    if (!window.minowaPenName(v.field_25)) return "ペンネームは 1〜" + window.MINOWA_PENNAME_MAX + "文字で入れてください。";
     if (!v.Message) return "タイトルが空です。タイトルを入れてください。";
     if (v.Message.length > MAX.Message) return "タイトルが長すぎます（" + MAX.Message + "文字まで）。";
     if (v.Body.length > MAX.Body) return "伝えたいことが長すぎます（" + MAX.Body + "文字まで）。";
@@ -523,7 +525,7 @@
   // Worker のエラーを、やさしい言葉にする
   function friendlyError(code, field, max) {
     switch (code) {
-      case "invalid number": return "出席番号は 4601〜4640 で入れてください。";
+      case "invalid penname": return "ペンネームは 1〜" + window.MINOWA_PENNAME_MAX + "文字で入れてください。";
       case "invalid place": return "場所を6つの中から選んでください。";
       case "invalid phase": return "いつの行動かを選び直してください。";
       case "pin required": return "「その他」のときは、地図をタップしてピンを置いてください。";
@@ -591,11 +593,6 @@
   $("editClose").addEventListener("click", tryCloseEdit);
   $("dlgOk").addEventListener("click", function () { closeDialog(true); });
   $("dlgCancel").addEventListener("click", function () { closeDialog(false); });
-  // 出席番号は数字だけ（全角の数字は半角にする）
-  $("efNumber").addEventListener("input", function () {
-    var t = this.value.replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }).replace(/[^0-9]/g, "").slice(0, 4);
-    if (t !== this.value) this.value = t;
-  });
 
   // ---------------- 入口 ----------------
   $("loginForm").addEventListener("submit", function (ev) {

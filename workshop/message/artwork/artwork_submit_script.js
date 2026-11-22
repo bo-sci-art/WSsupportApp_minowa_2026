@@ -1,8 +1,8 @@
 /**
- * S7 タイトル・伝えたいこと・いつの行動か・番号（箕輪小版・授業案 rev3）
+ * S7 タイトル・伝えたいこと・いつの行動か・ペンネーム（箕輪小版・授業案 rev3）
  * 保存先：localStorage.artworkSubmit = { title, body, phase, number, creationDate }
  *   phase  : 事前／災害時／復旧時（保存する値は変えない。画面は「災害の前／とき／あと」）
- *   number : クラス＋出席番号の4桁（4601〜4640）
+ *   number : ペンネーム（1〜10文字。保存のキーは最初の「番号」のときの名前のまま）
  */
 const CONFIG = {
     backUrl: '../../collage/app/index.html',
@@ -73,7 +73,7 @@ function renderPhases() {
     });
 }
 
-function numberOK(v) { return window.MINOWA_NUMBER_RE.test(v); }
+function numberOK(v) { return !!window.minowaPenName(v); }
 function update() {
     el.next.disabled = !(state.title && state.body && state.phase && numberOK(state.number));
 }
@@ -81,10 +81,9 @@ function update() {
 el.title.addEventListener('input', () => { state.title = el.title.value.trim(); if (state.title) el.titleV.style.display = 'none'; save(); update(); });
 el.body.addEventListener('input', () => { state.body = el.body.value.trim(); if (state.body) el.bodyV.style.display = 'none'; save(); update(); });
 el.number.addEventListener('input', () => {
-    // 全角の数字も半角にして、数字だけ残す
-    const v = el.number.value.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[^0-9]/g, '').slice(0, 4);
-    if (v !== el.number.value) el.number.value = v;
-    state.number = v;
+    // 入力中（漢字の変換中など）は欄の文字を書きかえない。保存するのは整えたペンネーム
+    const v = el.number.value;
+    state.number = window.minowaPenName(v) || v.trim();
     if (numberOK(v)) el.numberV.style.display = 'none';
     save(); update();
 });

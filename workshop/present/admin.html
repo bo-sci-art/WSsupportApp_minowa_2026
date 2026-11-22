@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>作品の管理（箕輪小 防災行動マップ）</title>
   <link rel="stylesheet" href="./leaflet.css">
-  <link rel="stylesheet" href="./admin_style.css?v=admin3">
+  <link rel="stylesheet" href="./admin_style.css?v=admin4">
 </head>
 <body>
   <header class="adm-header">
@@ -46,10 +46,10 @@
       <label>並び順
         <select id="sortOrder">
           <option value="id">登録した順（id）</option>
-          <option value="number">出席番号の順</option>
+          <option value="penname">ペンネームの順</option>
         </select>
       </label>
-      <input type="search" id="searchInput" placeholder="出席番号・タイトルで検索">
+      <input type="search" id="searchInput" placeholder="ペンネーム・タイトルで検索">
       <button type="button" id="reloadBtn" class="btn btn-ghost">読み直す</button>
       <span id="countInfo" class="adm-count"></span>
     </div>
@@ -62,7 +62,7 @@
           <th class="c-chk"><input type="checkbox" id="checkAll" title="表示中の作品を全部選ぶ"></th>
           <th class="c-img">画像</th>
           <th class="c-id">id</th>
-          <th class="c-num">出席番号</th>
+          <th class="c-num">ペンネーム</th>
           <th>タイトル</th>
           <th class="c-place">場所</th>
           <th class="c-phase">いつの行動</th>
@@ -148,8 +148,8 @@
           <div id="efPhases" class="ef-choices"></div>
         </div>
         <div class="ef" data-field="field_25">
-          <label class="ef-label" for="efNumber">出席番号 <span class="ef-hint">（4601〜4640）</span></label>
-          <input type="text" id="efNumber" inputmode="numeric" maxlength="4" pattern="[0-9]*">
+          <label class="ef-label" for="efNumber">ペンネーム <span class="ef-hint">（1〜10文字。本名や、だれかわかる名前にしない）</span></label>
+          <input type="text" id="efNumber" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
         <p id="editError" class="edit-error" hidden></p>
         <div class="edit-btns">
@@ -173,9 +173,9 @@
   </div>
 
   <script src="../common/config.js?v=minowa5"></script>
-  <script src="../common/places.js?v=minowa9"></script>
+  <script src="../common/places.js?v=minowa10"></script>
   <script src="../common/ruby.js?v=minowa5"></script>
   <script src="./leaflet.js"></script>
-  <script src="./admin_script.js?v=admin5"></script>
+  <script src="./admin_script.js?v=admin6"></script>
 </body>
 </html>

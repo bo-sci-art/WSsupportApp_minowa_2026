@@ -241,18 +241,19 @@ async function flow(label, viewport, placeId, number) {
   step(`マーブリングに戻って描き足し → コラージュ：スタンプ ${stampsAfter} 個（前は ${stampsBefore} 個）`);
   await page.click("#nextBtn");
 
-  // S7 タイトル・伝えたいこと・いつの行動か・番号
+  // S7 タイトル・伝えたいこと・いつの行動か・ペンネーム
   await page.waitForURL(/workshop\/message\/artwork\//, NAV);
   await page.fill("#artworkTitle", `E2Eテスト（${label}）大雨のときは早めに高いところへ！`);
   await page.fill("#artworkBody", "大雨で川があふれそうなときは、家族といっしょに早めに高い場所へ避難してほしいです。");
   await page.locator(".phase-option").nth(1).click();
-  await page.fill("#creatorNumber", "12");
-  run.checks.badNumberBlocked = await page.locator("#nextBtn").isDisabled();
-  await page.fill("#creatorNumber", "４２０" + number.slice(-1));   // 全角でも半角になる
-  await page.fill("#creatorNumber", number);
+  await page.fill("#creatorNumber", "   ");
+  const blankBlocked = await page.locator("#nextBtn").isDisabled();
+  await page.fill("#creatorNumber", "あいうえおかきくけこさ");   // 11文字
+  run.checks.badNumberBlocked = blankBlocked && await page.locator("#nextBtn").isDisabled();
+  await page.fill("#creatorNumber", "  " + number + "  ");   // 前後の空白はとって保存する
   run.checks.numberInputmode = await page.getAttribute("#creatorNumber", "inputmode");
   await shot(page, run, "S7_message");
-  step(`S7 入力：番号「12」では進めない=${run.checks.badNumberBlocked}、番号 ${number}、数字キーボード=${run.checks.numberInputmode}`);
+  step(`S7 入力：空白だけ・11文字のペンネームでは進めない=${run.checks.badNumberBlocked}、ペンネーム「${number}」`);
   await page.click("#nextBtn");
 
   // S8 確認して登録（スクロールなしで「登録する」が見える）
@@ -369,7 +370,7 @@ async function flow(label, viewport, placeId, number) {
   await page.fill("#art-search", number);
   await page.waitForTimeout(400);
   run.checks.search = await page.evaluate(([id, num]) => { const cards = [...document.querySelectorAll(".art-card")]; return { count: cards.length, hasMine: cards.some(c => c.id === "card-" + id), allMatch: cards.every(c => (c.querySelector(".art-num") || {}).textContent === num) }; }, [id, number]);
-  step(`番号で探す：「${number}」→ ${run.checks.search.count} 件（自分の作品あり=${run.checks.search.hasMine}、全部同じ番号=${run.checks.search.allMatch}）`);
+  step(`ペンネームで探す：「${number}」→ ${run.checks.search.count} 件（自分の作品あり=${run.checks.search.hasMine}、全部同じペンネーム=${run.checks.search.allMatch}）`);
   await page.fill("#art-search", "");
   await page.click(`#card-${id}`);
   await page.waitForURL(/workshop\/present\/detail\.html/, NAV);
@@ -393,7 +394,7 @@ async function flow(label, viewport, placeId, number) {
     run.checks.detail.hzOn = await page.locator(".dv-hz-chip.on").count() === 1;
     await shot(page, run, "S9d_detail_hazard");
   }
-  step(`作品ページ：番号 ${run.checks.detail.number}、場所「${run.checks.detail.place}」、伝えたいこと ${run.checks.detail.body ? "あり" : "なし"}、災害の行を隠す=${run.checks.detail.hazardRowHidden}、次の作品ボタン=${run.checks.detail.navVisible ? "あり" : "なし"}、ハザードマップを重ねる=${run.checks.detail.hzOn}`);
+  step(`作品ページ：ペンネーム ${run.checks.detail.number}、場所「${run.checks.detail.place}」、伝えたいこと ${run.checks.detail.body ? "あり" : "なし"}、災害の行を隠す=${run.checks.detail.hazardRowHidden}、次の作品ボタン=${run.checks.detail.navVisible ? "あり" : "なし"}、ハザードマップを重ねる=${run.checks.detail.hzOn}`);
 
   // テスト作品を削除
   const del = await fetch(`${WORKER}/artworks/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + ADMIN_KEY } }).then(r => r.json());
@@ -415,7 +416,7 @@ async function samePlaceTen() {
   for (let i = 0; i < 10; i++) {
     const r = await fetch(`${WORKER}/submit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
       secret: "minowa-ws-2026", lat: 35.54195, lon: 139.641434, imageBase64: img, imageExt: "jpg",
-      properties: { field_23: "事前", field_24: null, field_25: String(4611 + i), Message: `${tag} #${i + 1}`, Body: "テスト", place: "apita" } }) }).then(r => r.json());
+      properties: { field_23: "事前", field_24: null, field_25: "同じ場所" + (i + 1), Message: `${tag} #${i + 1}`, Body: "テスト", place: "apita" } }) }).then(r => r.json());
     if (r.ok) t.ids.push(r.id);
   }
   const browser = await chromium.launch();
@@ -445,8 +446,8 @@ async function samePlaceTen() {
 }
 
 // 横向き：固定の地点（新綱島駅）、縦向き：「その他」（地図にピンを置く）
-await flow("landscape", { width: 1180, height: 820 }, "shintsunashima", "4601");
-await flow("portrait", { width: 820, height: 1180 }, "other", "4640");
+await flow("landscape", { width: 1180, height: 820 }, "shintsunashima", "E2Eぼうさい1");
+await flow("portrait", { width: 820, height: 1180 }, "other", "E2E防災ヒーロー");
 await samePlaceTen();
 
 fs.writeFileSync(path.resolve("tools/out/report.json"), JSON.stringify(report, null, 2));
@@ -474,8 +475,8 @@ for (const r of report.runs) {
   if (r.restore.stampsAfter !== r.restore.stampsBefore) problems.push(`[${r.label}] スタンプが復元されない`);
   if (!c.alpha || !c.alpha.slider || c.alpha.after !== 1 || !(c.alpha.light < 0.4)) problems.push(`[${r.label}] 濃さのレバーが効かない ${JSON.stringify(c.alpha)}`);
   if (c.alphaKept !== 1) problems.push(`[${r.label}] 濃さが保存されない（もどったあと ${c.alphaKept}）`);
-  if (!c.badNumberBlocked) problems.push(`[${r.label}] 4けたでない番号で進めてしまう`);
-  if (c.numberInputmode !== "numeric") problems.push(`[${r.label}] 番号で数字キーボードが出ない`);
+  if (!c.badNumberBlocked) problems.push(`[${r.label}] 空白だけ・11文字のペンネームで進めてしまう`);
+  if (c.numberInputmode === "numeric") problems.push(`[${r.label}] ペンネームなのに数字キーボードになる`);
   if (c.s8.scroll > 0 || !c.s8.submitVisible || c.s8.rows !== 5 || c.s8.empty) problems.push(`[${r.label}] S8 が1画面に収まらない／未入力あり ${JSON.stringify(c.s8)}`);
   if (!/修正/.test(c.editLabel) || !c.editBack) problems.push(`[${r.label}] 「直す」から確認画面にもどれない`);
   if (r.redo) {
@@ -485,7 +486,7 @@ for (const r of report.runs) {
     if (!r.redo.collageUpdated || r.redo.stampsAfterCollageRedo !== r.redo.stampsAfterMarblingRedo + 1) problems.push(`[${r.label}] コラージュの作り直しが反映されない`);
   }
   const sf = c.savedFields || {};
-  if (!sf.body || !/^46\d\d$/.test(sf.number || "") || sf.place !== (other ? "other" : "shintsunashima") || sf.phase !== "災害時") problems.push(`[${r.label}] 保存された値がおかしい ${JSON.stringify(sf)}`);
+  if (!sf.body || !/^E2E/.test(sf.number || "") || sf.place !== (other ? "other" : "shintsunashima") || sf.phase !== "災害時") problems.push(`[${r.label}] 保存された値がおかしい ${JSON.stringify(sf)}`);
   if (!c.savedLatLonOK) problems.push(`[${r.label}] 保存された緯度経度が選んだ地点とちがう ${JSON.stringify(sf)} / ${JSON.stringify(r.pin)}`);
   if (!c.imageServed) problems.push(`[${r.label}] R2 の画像が読めない`);
   if (!c.guide || c.guide.filter(Boolean).length !== 4 || !c.guideClosed) problems.push(`[${r.label}] マップの使い方の写真が出ない／閉じない ${JSON.stringify(c.guide)}`);
@@ -493,7 +494,7 @@ for (const r of report.runs) {
   if (c.guideButtons !== 1) problems.push(`[${r.label}] マップの使い方のボタンが ${c.guideButtons} 個（1つにする）`);
   if (!c.mapPlaceActive || c.placePins !== 5 || c.placeTabs !== 7) problems.push(`[${r.label}] マップで自分の場所が開かない／ピン5つ・ボタン7つでない（${c.placePins}/${c.placeTabs}）`);
   if (other && (c.otherWorkPins < 1 || !String(c.cardPlace).includes("その他"))) problems.push(`[${r.label}] その他の作品がマップに出ない／「その他」と出ない（${c.otherWorkPins}／${c.cardPlace}）`);
-  if (!c.search.hasMine || !c.search.allMatch) problems.push(`[${r.label}] 番号で探す結果がおかしい ${JSON.stringify(c.search)}`);
+  if (!c.search.hasMine || !c.search.allMatch) problems.push(`[${r.label}] ペンネームで探す結果がおかしい ${JSON.stringify(c.search)}`);
   const d = c.detail || {};
   if (other ? (!String(d.place).includes("その他") || d.navVisible) : !String(d.place).includes("新綱島駅")) problems.push(`[${r.label}] 作品ページの場所・次の作品がおかしい ${JSON.stringify(d)}`);
   if (!d.hazardRowHidden || !d.hzOn) problems.push(`[${r.label}] 作品ページのハザードマップの表示がおかしい ${JSON.stringify(d)}`);

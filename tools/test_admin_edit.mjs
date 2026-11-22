@@ -5,7 +5,7 @@
 //   2) node tools/test_admin_edit.mjs [WorkerのURL=http://127.0.0.1:8787] [ADMIN_KEY=local-admin-key-for-test] [--app http://127.0.0.1:5500]
 //
 // スクリーンショットは tools/out/admin_edit/ に保存する。テストで登録した作品は最後に消す。
-// 箕輪小版：場所は6種類・番号は 4601〜4640・「見たハザードマップ」は出さない。「その他」のピンの位置（案A）も確かめる
+// 箕輪小版：場所は6種類・作者はペンネーム（1〜10文字）・「見たハザードマップ」は出さない。「その他」のピンの位置（案A）も確かめる
 import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
@@ -69,7 +69,7 @@ try {
 
     // 直す
     await row.locator(".btn-edit").click();
-    await page.fill("#efNumber", "4641");
+    await page.fill("#efNumber", "あいうえおかきくけこさ");
     await page.fill("#efTitle", "直したタイトル");
     await page.locator('input[name="efPlace"][value="pump"]').check();
     await page.locator('input[name="efPhase"][value="災害時"]').check();
@@ -79,14 +79,14 @@ try {
     ok(`[${label}] 場所を変えると「地図のピンも〇〇に移ります」`, /ピンも.*北綱島.*ポンプ場.*移ります/.test(note.replace(/\s/g, "")), note.replace(/\s+/g, ""));
     await page.screenshot({ path: path.join(OUT, `${label}_02_changed.png`), fullPage: false });
 
-    // 番号がちがうと、やさしいことばで止める
+    // ペンネームが長すぎると、やさしいことばで止める
     await page.locator("#editSave").scrollIntoViewIfNeeded();
     ok(`[${label}] 「保存する」までスクロールで届く`, await page.locator("#editSave").isVisible());
     await page.click("#editSave");
     const err = await page.locator("#editError").innerText();
-    ok(`[${label}] 番号 4641 →「出席番号は 4601〜4640…」`, /出席番号は 4601〜4640/.test(err), err);
-    ok(`[${label}] 番号がちがうときは保存の確認を出さない`, await page.locator("#dlgOverlay").isHidden());
-    await page.fill("#efNumber", label === "pc" ? "4619" : "4620");
+    ok(`[${label}] 11文字 →「ペンネームは 1〜10文字…」`, /ペンネームは 1〜10文字/.test(err), err);
+    ok(`[${label}] ペンネームがちがうときは保存の確認を出さない`, await page.locator("#dlgOverlay").isHidden());
+    await page.fill("#efNumber", label === "pc" ? "ぼうさいPC" : "防災アイパッド");
 
     // やめる（直している）→ 「保存せずに閉じますか？」→ もどる
     await page.click("#editCancel");
@@ -106,7 +106,7 @@ try {
 
     const f = await exportOne(id);
     const P = f.properties;
-    ok(`[${label}] Worker に保存された`, P.field_25 === (label === "pc" ? "4619" : "4620") && P.Message === "直したタイトル" && P.place === "pump" && P.field_23 === "事前, 災害時" && !P.field_24,
+    ok(`[${label}] Worker に保存された`, P.field_25 === (label === "pc" ? "ぼうさいPC" : "防災アイパッド") && P.Message === "直したタイトル" && P.place === "pump" && P.field_23 === "事前, 災害時" && !P.field_24,
       [P.field_25, P.Message, P.place, P.field_23, P.field_24].join(" / "));
     ok(`[${label}] 伝えたいこと（ふりがな記法つき）はそのまま`, P.Body === "大雨{おおあめ}のときは早めに逃げる。", P.Body);
     ok(`[${label}] ピンが北綱島ポンプ場に移った`, f.geometry.coordinates[0] === 139.65348008 && f.geometry.coordinates[1] === 35.53960528);

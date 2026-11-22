@@ -282,8 +282,8 @@ document.addEventListener("DOMContentLoaded", () => {
       listContainer.appendChild(e);
       return;
     }
-    // 番号の順に並べる（保護者が自分の子どもの作品を見つけやすいように）
-    items.sort((a, b) => String(a.properties.field_25 || "9999").localeCompare(String(b.properties.field_25 || "9999")) || (Number(a.properties.id) - Number(b.properties.id)));
+    // 登録した順に並べる（作者はペンネームなので、番号の順はない）
+    items.sort((a, b) => Number(a.properties.id) - Number(b.properties.id));
     items.forEach(f => {
       const p = f.properties, id = p.id;
       const q = placeOf(f);
@@ -297,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
         '<img src="' + imgUrl + '" class="art-card-img" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
         '<div class="art-card-info">' +
           '<div class="art-title art-message">' + escHtml(p.Message || "") + '</div>' +
-          '<div class="art-meta"><span class="art-num">' + escHtml(p.field_25 || "") + '</span>' +
+          '<div class="art-meta"><span class="art-num" data-user-text>' + escHtml(p.field_25 || "") + '</span>' +
           (q ? '<span class="art-place" style="--pc:' + q.color + '">' + rb(q.short) + '</span>' : '') +
           '<span class="art-icons">' + icons + '</span></div>' +
         '</div>';
@@ -433,13 +433,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!overlay) return;
     // 授業案 rev3：実際の画面の写真で、マップの見方を4枚で説明する（写真は tools/make_guide_images.mjs で作る）
     const steps = [
-      { title:"① 箕輪小{みのわしょう}のみんなの作品{さくひん}", img:"guide_01.jpg?v=1",
+      { title:"① 箕輪小{みのわしょう}のみんなの作品{さくひん}", img:"guide_01.jpg?v=2",
         desc:"箕輪小学校{みのわしょうがっこう}4年{ねん}6組{くみ}のみんなが、ハザードマップを読{よ}んで作{つく}った<strong>防災{ぼうさい}アート</strong>がのっています。<br>地図{ちず}のピンには、<strong>場所{ばしょ}の名前{なまえ}と作品{さくひん}の数{かず}</strong>が出{で}ています。" },
-      { title:"② 場所{ばしょ}を選{えら}ぶ・番号{ばんごう}で探{さが}す", img:"guide_02.jpg?v=1",
-        desc:"左上{ひだりうえ}の<strong>場所{ばしょ}のボタン</strong>か、地図{ちず}のピンを押{お}すと、その場所{ばしょ}の作品{さくひん}が並{なら}びます。<br><strong>番号{ばんごう}（例{れい} 4601）</strong>やタイトルでも探{さが}せます。" },
-      { title:"③ 作品{さくひん}をタップ", img:"guide_03.jpg?v=1",
+      { title:"② 場所{ばしょ}を選{えら}ぶ・ペンネームで探{さが}す", img:"guide_02.jpg?v=2",
+        desc:"左上{ひだりうえ}の<strong>場所{ばしょ}のボタン</strong>か、地図{ちず}のピンを押{お}すと、その場所{ばしょ}の作品{さくひん}が並{なら}びます。<br><strong>ペンネーム</strong>やタイトルでも探{さが}せます。" },
+      { title:"③ 作品{さくひん}をタップ", img:"guide_03.jpg?v=2",
         desc:"左{ひだり}の一覧{いちらん}の作品{さくひん}を<strong>タップ</strong>すると、<br>その作品{さくひん}のくわしいページが開{ひら}きます。" },
-      { title:"④ 作品{さくひん}のページ", img:"guide_04.jpg?v=1",
+      { title:"④ 作品{さくひん}のページ", img:"guide_04.jpg?v=2",
         desc:"タイトル・<strong>伝{つた}えたいこと</strong>・場所{ばしょ}・いつの行動{こうどう}かを見{み}られます。<br>地図{ちず}にハザードマップを重{かさ}ねて、<strong>その場所{ばしょ}の危険性{きけんせい}</strong>も見{み}られます。" }
     ];
     const rbx = (t) => window.rubyHTML ? window.rubyHTML(t) : t;

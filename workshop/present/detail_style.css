@@ -1805,7 +1805,7 @@ body.dv #global-header { flex: none; }
 .dv-fact { display: flex; flex-direction: column; min-width: 0; }
 .dv-fact-label { font-size: .85rem; font-weight: 800; color: #6b7280; line-height: 2.2; }
 .dv-fact-value { font-size: 1rem; font-weight: 700; line-height: 2.1; }
-.dv-num { font-size: 1.2rem; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+.dv-num { font-size: 1.2rem; overflow-wrap: anywhere; }
 .dv-tag { display: inline-block; background: #ecf6f4; color: #1f5a50; border-radius: 999px; padding: 0 10px; margin: 2px 6px 2px 0; font-size: .92rem; line-height: 2.2; }
 .dv-map-wrap { position: relative; }
 .dv-map { height: 190px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; }
@@ -1851,7 +1851,7 @@ body.dv #global-header { flex: none; }
 .dv-facts dt { font-size: .88rem; font-weight: 800; color: #6b7280; line-height: 2.3; white-space: nowrap; }
 .dv-facts dd { margin: 0; font-size: .98rem; font-weight: 700; line-height: 2.1; min-width: 0; }
 .dv-facts dd .dv-tag { margin: 1px 4px 1px 0; font-size: .85rem; line-height: 2.1; }
-.dv-num { font-size: 1.1rem; letter-spacing: .12em; }
+.dv-num { font-size: 1.1rem; }
 .dv-card-map { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
 .dv-card-map .dv-map { flex: 1 1 auto; min-height: 110px; height: auto; }
 .dv-hz-chips { margin: 0; gap: 6px; }

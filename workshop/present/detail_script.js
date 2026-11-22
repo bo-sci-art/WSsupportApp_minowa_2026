@@ -1,8 +1,8 @@
 /* =========================================================
    作品ページ（箕輪小版・授業案 rev3）
-   作品の画像・タイトル・伝えたいこと・場所・災害・いつの行動か・作者の番号を1画面で見せる。
+   作品の画像・タイトル・伝えたいこと・場所・災害・いつの行動か・作者のペンネームを1画面で見せる。
    （授業案 rev3：「共感した」「実践したい」のボタンは使わない）
-   「前の作品／次の作品」は、同じ場所（?place= があるとき）の作品を番号の順に移動する（発表用）。
+   「前の作品／次の作品」は、同じ場所（?place= があるとき）の作品を登録した順に移動する（発表用）。
    ========================================================= */
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -127,14 +127,14 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => map.invalidateSize(), 200);
   }
 
-  // ---- 前の作品・次の作品（同じ場所の中を番号の順に） ----
+  // ---- 前の作品・次の作品（同じ場所の中を登録した順に） ----
   //   「その他」の作品は場所がばらばらなので「前の作品／次の作品」の対象にしない（1点ずつ表示）
   function setupPrevNext() {
     const prevB = document.getElementById("prev-btn"), nextB = document.getElementById("next-btn"), posB = document.getElementById("nav-pos");
     if (isOtherWork(feature)) { prevB.style.visibility = "hidden"; nextB.style.visibility = "hidden"; posB.textContent = ""; return; }
     const curPlace = listPlace && window.minowaPlace(listPlace) && listPlace !== "other" ? listPlace : null;
     const list = ALL.filter(f => { if (isOtherWork(f)) return false; if (!curPlace) return true; const q = placeOf(f); return q && q.id === curPlace; })
-      .sort((a, b) => String(a.properties.field_25 || "9999").localeCompare(String(b.properties.field_25 || "9999")) || (Number(a.properties.id) - Number(b.properties.id)));
+      .sort((a, b) => Number(a.properties.id) - Number(b.properties.id));
     const i = list.findIndex(f => String(f.properties.id) === String(artId));
     const prev = document.getElementById("prev-btn"), next = document.getElementById("next-btn"), pos = document.getElementById("nav-pos");
     const go = (f) => { window.location.href = "detail.html?id=" + f.properties.id + (curPlace ? "&place=" + curPlace : ""); };
@@ -161,9 +161,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const dots = document.querySelectorAll(".dt-dot"), helpBtn = document.getElementById("detail-help-btn");
     if (!overlay) return;
     const steps = [
-      { img: "detail_guide_01.jpg?v=1", title: "作品{さくひん}の見方{みかた}", desc: "背景{はいけい}の<strong>マーブリング</strong>は、その場所{ばしょ}の<strong>災害{さいがい}リスク</strong>を、<br>上{うえ}に貼{は}った<strong>コラージュ</strong>（スタンプ）は、<strong>防災行動{ぼうさいこうどう}</strong>を表{あらわ}しています。" },
-      { img: "detail_guide_02.jpg?v=1", title: "作者{さくしゃ}のメッセージ", desc: "作品{さくひん}のとなりには、タイトルと<strong>この作品{さくひん}で伝{つた}えたいこと</strong>、<br><strong>作品{さくひん}の情報{じょうほう}</strong>（場所{ばしょ}・いつの行動{こうどう}・作者{さくしゃ}）が出{で}ています。" },
-      { img: "detail_guide_03.jpg?v=1", title: "この場所{ばしょ}の危険性{きけんせい}", desc: "「ハザードマップを重{かさ}ねる」を押{お}すと、作品{さくひん}がハザードマップに重{かさ}なります。<br>「次{つぎ}の作品{さくひん}」ボタンで、同{おな}じ場所{ばしょ}をテーマにした作品{さくひん}を順番{じゅんばん}に見{み}ることができます。" }
+      { img: "detail_guide_01.jpg?v=2", title: "作品{さくひん}の見方{みかた}", desc: "背景{はいけい}の<strong>マーブリング</strong>は、その場所{ばしょ}の<strong>災害{さいがい}リスク</strong>を、<br>上{うえ}に貼{は}った<strong>コラージュ</strong>（スタンプ）は、<strong>防災行動{ぼうさいこうどう}</strong>を表{あらわ}しています。" },
+      { img: "detail_guide_02.jpg?v=2", title: "作者{さくしゃ}のメッセージ", desc: "作品{さくひん}のとなりには、タイトルと<strong>この作品{さくひん}で伝{つた}えたいこと</strong>、<br><strong>作品{さくひん}の情報{じょうほう}</strong>（場所{ばしょ}・いつの行動{こうどう}・作者{さくしゃ}）が出{で}ています。" },
+      { img: "detail_guide_03.jpg?v=2", title: "この場所{ばしょ}の危険性{きけんせい}", desc: "「ハザードマップを重{かさ}ねる」を押{お}すと、作品{さくひん}がハザードマップに重{かさ}なります。<br>「次{つぎ}の作品{さくひん}」ボタンで、同{おな}じ場所{ばしょ}をテーマにした作品{さくひん}を順番{じゅんばん}に見{み}ることができます。" }
     ];
     let page = 0;
     function update() {

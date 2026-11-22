@@ -34,7 +34,7 @@ ruby rt { align-self: flex-start; display: flex; justify-content: center; align-
 .s8-row-value { font-size: 1.05rem; line-height: 2.1; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; word-break: break-all; }
 .s8-row.empty .s8-row-value { color: #b91c1c; font-weight: 700; }
 .s8-v-title { font-size: 1.2rem; font-weight: 800; }
-.s8-v-num { font-size: 1.25rem; font-weight: 800; letter-spacing: .15em; font-variant-numeric: tabular-nums; }
+.s8-v-num { font-size: 1.25rem; font-weight: 800; }
 .s8-tag { display: inline-block; background: #ecf6f4; color: #1f5a50; border-radius: 999px; padding: 0 12px; margin: 2px 6px 2px 0; font-weight: 700; font-size: .98rem; line-height: 2.2; }
 .s8-edit { appearance: none; border: 2px solid #d1d5db; background: #fff; border-radius: 999px; padding: 4px 14px; font-size: .98rem; font-weight: 800; color: #374151; cursor: pointer; line-height: 2.1; white-space: nowrap; font-family: inherit; }
 

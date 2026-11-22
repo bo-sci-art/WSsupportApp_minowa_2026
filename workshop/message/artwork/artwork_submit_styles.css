@@ -365,7 +365,7 @@ body {
 .phase-option .phase-name { font-size: 1.2rem; font-weight: 800; line-height: 2; }
 .phase-option .phase-desc { font-size: .95rem; color: #4b5563; line-height: 1.9; }
 .phase-option.selected { border-color: #4f8b80; background: #ecf6f4; }
-.number-input { font-size: 1.6rem !important; letter-spacing: .25em; text-align: center; max-width: 220px; font-variant-numeric: tabular-nums; }
+.penname-input { font-size: 1.3rem !important; max-width: 320px; }
 @media (orientation: portrait) {
   .s7-grid { grid-template-columns: 1fr; }
 }
@@ -393,7 +393,7 @@ body {
 .s7-side .phase-option .phase-name { font-size: 1.1rem; line-height: 1.9; }
 .s7-side .phase-option .phase-desc { font-size: .88rem; line-height: 1.8; }
 .s7-num-desc { margin: 0 0 4px !important; }
-.s7-side .number-input { padding-top: 6px !important; padding-bottom: 6px !important; }
+.s7-side .penname-input { padding-top: 6px !important; padding-bottom: 6px !important; }
 .s7-main .description-textarea { min-height: 120px !important; }
 @media (orientation: portrait) {
   .s7-art .s7-art-frame { height: 20vh; }
@@ -417,7 +417,7 @@ body {
 .s7-grid .s7-art, .s7-grid .s7-main, .s7-grid .s7-side { grid-column: 1 / -1; }
 .s7-side .phase-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .s7-side .phase-option { padding: 6px 12px; min-height: 64px; }
-.s7-side .number-input { max-width: 260px; }
+.s7-side .penname-input { max-width: 100%; }
 @media (orientation: portrait) {
   .s7-side .phase-options { grid-template-columns: 1fr; }
 }

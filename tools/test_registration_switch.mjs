@@ -122,7 +122,7 @@ for (const screenOpen of [false, true]) {
   await page.goto(`${APP}/workshop/present/admin.html`, { waitUntil: "domcontentloaded" });
   await page.fill("#keyInput", KEY); await page.click("#loginBtn");
   await page.locator("#listView").waitFor();
-  await page.selectOption("#sortOrder", "number");
+  await page.selectOption("#sortOrder", "penname");
   ok(`${st} 管理画面の一覧・並び順が使える`, (await page.locator("#rows tr").count()) > 0);
   await page.locator(`#rows tr[data-id="${target.id}"] .btn-edit`).click();
   await page.fill("#efTitle", target.Message + "（受付テスト）");

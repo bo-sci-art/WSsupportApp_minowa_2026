@@ -889,7 +889,7 @@ ruby rt { font-size: .5em; font-weight: 400; color: inherit; opacity: .72; }
 .list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 2px; font-weight: 800; color: #374151; line-height: 2.2; position: sticky; top: 0; background: #fff; z-index: 2; }
 .list-head .lh-count { color: #EE8972; }
 .art-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-.art-meta .art-num { font-weight: 800; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+.art-meta .art-num { font-weight: 800; overflow-wrap: anywhere; }
 .art-meta .art-place { --pc: #888; font-size: .8rem; font-weight: 700; color: var(--pc); border: 1.5px solid var(--pc); border-radius: 999px; padding: 0 8px; line-height: 2.2; }
 .art-meta .art-icons { margin-left: auto; }
 /* 地図：場所のピン（名前と作品の数） */

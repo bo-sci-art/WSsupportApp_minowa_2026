@@ -7,7 +7,7 @@
  * - Body     : この作品で伝えたいこと
  * - field_23 : いつの行動か（事前／災害時／復旧時）
  * - field_24 : 使わない（箕輪小版はハザードマップを選ばない。空のまま送る）
- * - field_25 : 作者の番号（4601〜4640）
+ * - field_25 : 作者のペンネーム（1〜10文字）
  * - place    : 地点の種類（apita / shintsunashima / conforte / hiyoshinooka / pump / other）
  *   lat / lon : 固定5か所はその場所の固定の座標、other は児童が地図に置いたピンの座標
  * - Mabling・collage は使わない（空のまま）
@@ -72,7 +72,7 @@ function renderSummary() {
         row('タイトル', a.title ? '<span class="s8-v-title" data-user-text>' + esc(a.title) + '</span>' : NONE, 'artwork', !a.title),
         row('伝{つた}えたいこと', a.body ? '<span class="s8-v-body" data-user-text>' + esc(a.body) + '</span>' : NONE, 'artwork', !a.body),
         row('いつの行動{こうどう}', a.phase ? '<span class="s8-tag">' + rb(window.minowaPhaseLabel(a.phase)) + '</span>' : NONE_SEL, 'artwork', !a.phase),
-        row('番号{ばんごう}', window.MINOWA_NUMBER_RE.test(a.number || '') ? '<span class="s8-v-num">' + esc(a.number) + '</span>' : NONE, 'artwork', !window.MINOWA_NUMBER_RE.test(a.number || '')),
+        row('ペンネーム', window.minowaPenName(a.number) ? '<span class="s8-v-num" data-user-text>' + esc(window.minowaPenName(a.number)) + '</span>' : NONE, 'artwork', !window.minowaPenName(a.number)),
         row('作品{さくひん}にする場所{ばしょ}', place ? '📍 ' + rb(place.name) + (place.isOther ? ' <span class="s8-v-sub">' + rb('（地図{ちず}にピンを置{お}いた場所{ばしょ}）') + '</span>' : '') : NONE_SEL, 'place', !place)
     ].join('');
     const list = document.getElementById('summaryList');
@@ -86,7 +86,7 @@ function missingItems() {
     if (!a.title) m.push('タイトル');
     if (!a.body) m.push('伝えたいこと');
     if (!a.phase) m.push('いつの行動か');
-    if (!window.MINOWA_NUMBER_RE.test(a.number || '')) m.push('番号');
+    if (!window.minowaPenName(a.number)) m.push('ペンネーム');
     if (!appData.location) m.push('場所');
     return m;
 }
@@ -184,7 +184,7 @@ function buildSubmitPayload(imageDataURL) {
         properties: {
             field_23: a.phase || null,
             field_24: null,
-            field_25: a.number,
+            field_25: window.minowaPenName(a.number),
             Message: a.title || '',
             Body: a.body || '',
             place: place.id,

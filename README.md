@@ -20,7 +20,7 @@
 | 1 場所 | 作品にする場所を6つから選ぶ（アピタテラス／新綱島駅／コンフォール南日吉／日吉の丘／北綱島ポンプ場／その他）。「その他」は地図をタップしてピンを置き、「ここでいいかな？」で確かめる | `workshop/map/Log/log_hazard_map.html` |
 | 2 マーブリング | マーブリング（「もどる」は場所の画面） | `workshop/marbling/app/` |
 | 3 コラージュ | コラージュ（「◀ マーブリングを直す」でマーブリングにもどれる。スタンプは消えない） | `workshop/collage/app/` |
-| 4 メッセージ | タイトル・伝えたいこと・いつの行動か・番号 → 確認して登録（選んだ場所を表示） | `workshop/message/artwork/`、`workshop/message/lastconfirm/` |
+| 4 メッセージ | タイトル・伝えたいこと・いつの行動か・ペンネーム → 確認して登録（選んだ場所を表示） | `workshop/message/artwork/`、`workshop/message/lastconfirm/` |
 | | 防災行動マップ（場所のボタン、または `?place=apita` など。絞り込みはいつも表示） | `workshop/present/` |
 | | 作品の管理画面（先生用。歯車 ⚙ から） | `workshop/present/admin.html` |
 
@@ -40,7 +40,7 @@
 
 ## そのほかの決まり
 
-- 作者は「クラス＋出席番号」の4桁（4年6組 → 4601〜4640）。Worker でも確かめる（`worker/src/index.js` の `NUMBER_RE`、`places.js` の `MINOWA_NUMBER_RE`）
+- 作者は**ペンネーム**（1〜10文字。出席番号は、使うのに保護者の許可がいるので使わない）。本名や、だれかわかる名前は書かないように画面に出す。だれかと同じでもよい。空白は1つにまとめ、前後の空白はとる。Worker でも確かめる（`worker/src/index.js` の `penName`、`places.js` の `minowaPenName`）。D1 の列は今までの `field_25` のまま
 - いつの行動か：保存する値は「事前／災害時／復旧時」のまま、画面は「災害の前／災害のとき／災害のあと」
 - 「伝えたいこと」は D1 の `Body` 列。`field_24`（読み取ったハザードマップ）は使わない（空）
 - ブラウザに保存する値（localStorage・IndexedDB）はすべて `minowa_` で始まる名前にしてある。同じ `bo-sci-art.github.io` で公開しているほかの版と、同じ iPad でも混ざらない

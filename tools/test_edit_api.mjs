@@ -4,7 +4,7 @@
 //   node tools/test_edit_api.mjs [WorkerのURL=http://127.0.0.1:8787] [ADMIN_KEY=local-admin-key-for-test]
 //
 // テストで登録した作品は、最後に DELETE で消す。本番の Worker では使わない（作品を登録して直すため）。
-// 箕輪小版：場所は6種類、番号は 4601〜4640、field_24（見たハザードマップ）は直せない。
+// 箕輪小版：場所は6種類、作者はペンネーム（1〜10文字）、field_24（見たハザードマップ）は直せない。
 //   「その他」の座標の扱い（案A）も確かめる：固定→固定・その他→固定（もとのピンを残す）・固定→その他（ピンが必要）・その他→その他
 const BASE = (process.argv[2] || "http://127.0.0.1:8787").replace(/\/+$/, "");
 const KEY = process.argv[3] || "local-admin-key-for-test";
@@ -44,10 +44,10 @@ try {
 
   // 2. 入力チェック
   const bad = async (name, body, code) => { const r = await put(id, body); const j = await r.json().catch(() => ({})); ok("2. " + name + " → 400 " + code, r.status === 400 && j.error === code, r.status + " " + j.error); };
-  await bad("番号 4641", { field_25: "4641" }, "invalid number");
-  await bad("番号 4600", { field_25: "4600" }, "invalid number");
-  await bad("番号 4201（ほかの学校の番号）", { field_25: "4201" }, "invalid number");
-  await bad("番号 文字", { field_25: "abcd" }, "invalid number");
+  await bad("ペンネーム 空", { field_25: "" }, "invalid penname");
+  await bad("ペンネーム 空白だけ", { field_25: "　 " }, "invalid penname");
+  await bad("ペンネーム 11文字", { field_25: "あいうえおかきくけこさ" }, "invalid penname");
+  await bad("ペンネーム null", { field_25: null }, "invalid penname");
   await bad("場所 ちがう", { place: "tokyo" }, "invalid place");
   await bad("場所 ほかの学校の場所", { place: "kagami" }, "invalid place");
   await bad("いつの行動 ちがう", { field_23: "事前, あした" }, "invalid phase");
@@ -62,13 +62,13 @@ try {
   ok("2. ない id → 404", r.status === 404, r.status);
 
   // 3. 場所を変えると座標も変わる（固定 → 固定）
-  r = await put(id, { place: "pump", field_23: ["事前", "災害時"], field_25: "4640", Body: "直した文" });
+  r = await put(id, { place: "pump", field_23: ["事前", "災害時"], field_25: "  ぼうさい　ヒーロー ", Body: "直した文" });
   j = await r.json();
   const pub = await findPublic(id);
   const c = pub && pub.geometry.coordinates;
   ok("3. 場所 pump → 座標が北綱島ポンプ場に", j.ok && c && c[0] === 139.65348008 && c[1] === 35.53960528, JSON.stringify(c));
   ok("3. いつの行動を2つ保存・field_24 は空のまま", pub.properties.field_23 === "事前, 災害時" && !pub.properties.field_24, pub.properties.field_23 + " / " + pub.properties.field_24);
-  ok("3. 番号 4640・伝えたいことを保存", pub.properties.field_25 === "4640" && pub.properties.Body === "直した文");
+  ok("3. ペンネーム（空白を整えて）・伝えたいことを保存", pub.properties.field_25 === "ぼうさい ヒーロー" && pub.properties.Body === "直した文", pub.properties.field_25);
 
   // 3b. 「その他」の座標（案A）
   const coords = async (id) => (await findExport(id)).geometry.coordinates;

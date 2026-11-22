@@ -94,7 +94,7 @@ cd .. && node tools/load_test_30.mjs https://minowa-submit.kazuki131214.workers.
 
 ## 受け付ける作品（`worker/src/index.js`）
 
-- 番号：4601〜4640（`NUMBER_RE`）。人数が決まったら、ここと `workshop/common/places.js` の `MINOWA_NUMBER_RE` を同じに直す
+- 作者：ペンネーム 1〜10文字（`penName`。列は `field_25`）。`workshop/common/places.js` の `minowaPenName` と同じ決まりにする。ちがうときは `400 invalid penname`
 - 地点の種類：`apita`／`shintsunashima`／`conforte`／`hiyoshinooka`／`pump`／`other`（`PLACES`）
 - 座標：綱島・日吉周辺（北緯 35.525〜35.565、東経 139.620〜139.670）の中だけ（`AREA`）
 
@@ -126,7 +126,7 @@ npm run dev
 
 ## 補足
 
-- CORS で指定できるのはオリジン（`https://bo-sci-art.github.io`）までで、`/WSsupportApp_minowa_2026/` のようなパスでは区別できません。ほかの版のページからの送信は、合言葉・番号（46xx）・地点の種類・範囲のチェックで受け付けないようにしています。
+- CORS で指定できるのはオリジン（`https://bo-sci-art.github.io`）までで、`/WSsupportApp_minowa_2026/` のようなパスでは区別できません。ほかの版のページからの送信は、合言葉・地点の種類・範囲のチェックで受け付けないようにしています。
 - 画像は推測しにくいランダムなキーで R2 に保存し、`GET /images/<key>` で返します。
 
 ---
@@ -137,9 +137,9 @@ npm run dev
 
 - 場所：防災行動マップのヘッダー右にある小さな歯車（⚙）を押す。または `https://bo-sci-art.github.io/WSsupportApp_minowa_2026/workshop/present/admin.html` を開く
 - 入り方：合言葉の欄に `ADMIN_KEY`（`worker/.admin_key` の中身）を入れて「入る」。「このPCで覚える」にチェックをつけると、このブラウザに覚える（`minowaAdminKey`）
-- 一覧：非公開の作品もふくめて全件。場所（6つ）・状態の絞り込み、出席番号・タイトルの検索、並び順（登録した順／出席番号の順）
+- 一覧：非公開の作品もふくめて全件。場所（6つ）・状態の絞り込み、ペンネーム・タイトルの検索、並び順（登録した順／ペンネームの順）
 - 操作：行を押して選び、「削除する」（D1 の行と R2 の画像を消す。元に戻せない）・「非公開にする」・「公開に戻す」
-- 確認・修正：出席番号・タイトル・伝えたいこと・場所・いつの行動かを直せる（画像・公開／非公開・登録日時は変わらない。箕輪小版は「見たハザードマップ」を使わないので出さない）
+- 確認・修正：ペンネーム・タイトル・伝えたいこと・場所・いつの行動かを直せる（画像・公開／非公開・登録日時は変わらない。箕輪小版は「見たハザードマップ」を使わないので出さない）
   - 固定の5か所に変えると、ピンはその場所の座標に移る
   - 「その他」に変えると、パネルの地図でピンを置く（赤い枠＝綱島・日吉周辺の中だけ）。「その他」の作品は、地図をタップしたときだけピンが動く
   - 「その他」から固定の場所に変えたときは、児童が置いたピンを D1 の `extra.original_pin` に残す。あとで「その他」に戻すと、そのピンから始まる
@@ -151,7 +151,7 @@ npm run dev
 Worker の窓口（どれも `Authorization: Bearer <ADMIN_KEY>` が必要）：
 
 - `PATCH /artworks/<id>`：`{"status":"approved"}` か `{"status":"hidden"}`（公開・非公開）
-- `PUT /artworks/<id>`：直す項目だけを送る（`field_25`・`Message`・`Body`・`place`・`field_23`。場所を「その他」にするときは `lat`・`lon` も）。登録と同じ基準で確かめる。エラーは `invalid number`・`invalid place`・`invalid phase`・`too long`・`pin required`・`location out of area`・`pin only for other` など
+- `PUT /artworks/<id>`：直す項目だけを送る（`field_25`・`Message`・`Body`・`place`・`field_23`。場所を「その他」にするときは `lat`・`lon` も）。登録と同じ基準で確かめる。エラーは `invalid penname`・`invalid place`・`invalid phase`・`too long`・`pin required`・`location out of area`・`pin only for other` など
 
 ## 作品の受け付けを止める・再開する
 

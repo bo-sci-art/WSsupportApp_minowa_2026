@@ -9,7 +9,7 @@
 //   GET    /export          全作品を GeoJSON でダウンロード（ADMIN_KEY が必要）
 //   DELETE /artworks/:id    作品を1件削除（画像も消す。ADMIN_KEY が必要）
 //   PATCH  /artworks/:id    作品の公開・非公開を切り替える（{ "status": "approved" | "hidden" }。ADMIN_KEY が必要）
-//   PUT    /artworks/:id    作品の情報を直す（番号・タイトル・伝えたいこと・場所・いつの行動か。ADMIN_KEY が必要）
+//   PUT    /artworks/:id    作品の情報を直す（ペンネーム・タイトル・伝えたいこと・場所・いつの行動か。ADMIN_KEY が必要）
 //                           送られてきた項目だけを直す。画像・status・created_at は変えない。extra.updated_at に直した日時を残す
 //                           場所を「その他」にするときは lat・lon（ピンの位置。AREA の中）もいっしょに送る（下の updateArtwork を参照）
 //
@@ -24,8 +24,16 @@
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;          // 画像の上限（1000px JPEG なら 0.3MB 前後）
 const MAX_TEXT = { field_23: 100, field_24: 500, field_25: 60, Message: 300, Body: 1000, place: 20, collage: 3000, Mabling: 3000, hazard: 500, target: 200, creationDate: 20 };
-// 箕輪小版：作者は「クラス＋出席番号」の4桁（4年6組 → 4601〜4640）
-const NUMBER_RE = /^46(0[1-9]|[1-3][0-9]|40)$/;
+// 箕輪小版：作者は「ペンネーム」（列は field_25 のまま）。出席番号は使わない（使うには保護者の許可がいるため）
+//   1〜10文字（ひらがな・カタカナ・漢字・英字・数字など）。改行や制御文字は入れない。だれかと同じでもよい
+//   空白は1つにまとめ、前後の空白はとる。※ workshop/common/places.js の minowaPenName と同じ決まりにする
+const PENNAME_MAX = 10;
+function penName(v) {
+  if (v === null || v === undefined) return null;
+  const s = String(v).replace(/[\s　]+/g, " ").trim();
+  if (!s || /[\u0000-\u001F\u007F]/.test(s) || Array.from(s).length > PENNAME_MAX) return null;
+  return s;
+}
 // 地点の種類：固定5か所のどれか、または「その他」（児童が地図にピンを置いた場所）
 //   ※ workshop/common/places.js の MINOWA_PLACES の id と同じにする
 const PLACES = ["apita", "shintsunashima", "conforte", "hiyoshinooka", "pump", "other"];
@@ -102,7 +110,8 @@ async function submit(request, env, cors) {
     const v = props[k];
     fields[k] = (v === null || v === undefined) ? null : String(v).slice(0, MAX_TEXT[k]);
   }
-  if (!fields.field_25 || !NUMBER_RE.test(fields.field_25)) return json({ ok: false, error: "invalid number" }, 400, cors);
+  fields.field_25 = penName(props.field_25);
+  if (!fields.field_25) return json({ ok: false, error: "invalid penname" }, 400, cors);
   if (!fields.place || PLACES.indexOf(fields.place) < 0) return json({ ok: false, error: "invalid place" }, 400, cors);
   if (!fields.creationDate) fields.creationDate = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 
@@ -291,9 +300,10 @@ async function updateArtwork(request, idStr, env, cors) {
       continue;
     }
     if (v !== null && typeof v !== "string" && typeof v !== "number") return json({ ok: false, error: "invalid value", field: k }, 400, cors);
-    const str = v === null ? null : String(v).trim();
+    let str = v === null ? null : String(v).trim();
     if (k === "field_25") {
-      if (!str || !NUMBER_RE.test(str)) return json({ ok: false, error: "invalid number", field: k }, 400, cors);
+      str = penName(str);
+      if (!str) return json({ ok: false, error: "invalid penname", field: k }, 400, cors);
     } else if (k === "place") {
       if (!str || PLACES.indexOf(str) < 0) return json({ ok: false, error: "invalid place", field: k }, 400, cors);
     }
