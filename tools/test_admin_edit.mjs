@@ -5,7 +5,7 @@
 //   2) node tools/test_admin_edit.mjs [WorkerのURL=http://127.0.0.1:8787] [ADMIN_KEY=local-admin-key-for-test] [--app http://127.0.0.1:5500]
 //
 // スクリーンショットは tools/out/admin_edit/ に保存する。テストで登録した作品は最後に消す。
-// 箕輪小版：場所は6種類・作者はペンネーム（1〜10文字）・「見たハザードマップ」は出さない。「その他」のピンの位置（案A）も確かめる
+// 箕輪小版：場所は6種類・作者はペンネーム（文字数の決まりなし）・「見たハザードマップ」は出さない。「その他」のピンの位置（案A）も確かめる
 import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
@@ -69,7 +69,7 @@ try {
 
     // 直す
     await row.locator(".btn-edit").click();
-    await page.fill("#efNumber", "あいうえおかきくけこさ");
+    await page.fill("#efNumber", "　 ");
     await page.fill("#efTitle", "直したタイトル");
     await page.locator('input[name="efPlace"][value="pump"]').check();
     await page.locator('input[name="efPhase"][value="災害時"]').check();
@@ -79,12 +79,12 @@ try {
     ok(`[${label}] 場所を変えると「地図のピンも〇〇に移ります」`, /ピンも.*北綱島.*ポンプ場.*移ります/.test(note.replace(/\s/g, "")), note.replace(/\s+/g, ""));
     await page.screenshot({ path: path.join(OUT, `${label}_02_changed.png`), fullPage: false });
 
-    // ペンネームが長すぎると、やさしいことばで止める
+    // ペンネームが空だと、やさしいことばで止める
     await page.locator("#editSave").scrollIntoViewIfNeeded();
     ok(`[${label}] 「保存する」までスクロールで届く`, await page.locator("#editSave").isVisible());
     await page.click("#editSave");
     const err = await page.locator("#editError").innerText();
-    ok(`[${label}] 11文字 →「ペンネームは 1〜10文字…」`, /ペンネームは 1〜10文字/.test(err), err);
+    ok(`[${label}] 空白だけ →「ペンネームが空です…」`, /ペンネームが空です/.test(err), err);
     ok(`[${label}] ペンネームがちがうときは保存の確認を出さない`, await page.locator("#dlgOverlay").isHidden());
     await page.fill("#efNumber", label === "pc" ? "ぼうさいPC" : "防災アイパッド");
 

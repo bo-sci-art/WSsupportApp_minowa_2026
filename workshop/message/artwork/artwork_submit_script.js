@@ -2,7 +2,7 @@
  * S7 タイトル・伝えたいこと・いつの行動か・ペンネーム（箕輪小版・授業案 rev3）
  * 保存先：localStorage.artworkSubmit = { title, body, phase, number, creationDate }
  *   phase  : 事前／災害時／復旧時（保存する値は変えない。画面は「災害の前／とき／あと」）
- *   number : ペンネーム（1〜10文字。保存のキーは最初の「番号」のときの名前のまま）
+ *   number : ペンネーム（保存のキーは最初の「番号」のときの名前のまま）
  */
 const CONFIG = {
     backUrl: '../../collage/app/index.html',

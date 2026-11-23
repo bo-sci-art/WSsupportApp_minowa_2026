@@ -94,7 +94,7 @@ cd .. && node tools/load_test_30.mjs https://minowa-submit.kazuki131214.workers.
 
 ## 受け付ける作品（`worker/src/index.js`）
 
-- 作者：ペンネーム 1〜10文字（`penName`。列は `field_25`）。`workshop/common/places.js` の `minowaPenName` と同じ決まりにする。ちがうときは `400 invalid penname`
+- 作者：ペンネーム（`penName`。列は `field_25`）。文字数の決まりはない（100文字をこえた分は切る）。空のときは `400 invalid penname`。`workshop/common/places.js` の `minowaPenName` と同じ決まりにする
 - 地点の種類：`apita`／`shintsunashima`／`conforte`／`hiyoshinooka`／`pump`／`other`（`PLACES`）
 - 座標：綱島・日吉周辺（北緯 35.525〜35.565、東経 139.620〜139.670）の中だけ（`AREA`）
 

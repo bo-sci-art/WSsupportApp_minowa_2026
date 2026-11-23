@@ -513,7 +513,7 @@
 
   // 画面の中で先に確かめる
   function validate(v) {
-    if (!window.minowaPenName(v.field_25)) return "ペンネームは 1〜" + window.MINOWA_PENNAME_MAX + "文字で入れてください。";
+    if (!window.minowaPenName(v.field_25)) return "ペンネームが空です。ペンネームを入れてください。";
     if (!v.Message) return "タイトルが空です。タイトルを入れてください。";
     if (v.Message.length > MAX.Message) return "タイトルが長すぎます（" + MAX.Message + "文字まで）。";
     if (v.Body.length > MAX.Body) return "伝えたいことが長すぎます（" + MAX.Body + "文字まで）。";
@@ -525,7 +525,7 @@
   // Worker のエラーを、やさしい言葉にする
   function friendlyError(code, field, max) {
     switch (code) {
-      case "invalid penname": return "ペンネームは 1〜" + window.MINOWA_PENNAME_MAX + "文字で入れてください。";
+      case "invalid penname": return "ペンネームが空です。ペンネームを入れてください。";
       case "invalid place": return "場所を6つの中から選んでください。";
       case "invalid phase": return "いつの行動かを選び直してください。";
       case "pin required": return "「その他」のときは、地図をタップしてピンを置いてください。";

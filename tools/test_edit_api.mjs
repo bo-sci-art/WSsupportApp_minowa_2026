@@ -4,7 +4,7 @@
 //   node tools/test_edit_api.mjs [WorkerのURL=http://127.0.0.1:8787] [ADMIN_KEY=local-admin-key-for-test]
 //
 // テストで登録した作品は、最後に DELETE で消す。本番の Worker では使わない（作品を登録して直すため）。
-// 箕輪小版：場所は6種類、作者はペンネーム（1〜10文字）、field_24（見たハザードマップ）は直せない。
+// 箕輪小版：場所は6種類、作者はペンネーム（文字数の決まりなし）、field_24（見たハザードマップ）は直せない。
 //   「その他」の座標の扱い（案A）も確かめる：固定→固定・その他→固定（もとのピンを残す）・固定→その他（ピンが必要）・その他→その他
 const BASE = (process.argv[2] || "http://127.0.0.1:8787").replace(/\/+$/, "");
 const KEY = process.argv[3] || "local-admin-key-for-test";
@@ -46,7 +46,7 @@ try {
   const bad = async (name, body, code) => { const r = await put(id, body); const j = await r.json().catch(() => ({})); ok("2. " + name + " → 400 " + code, r.status === 400 && j.error === code, r.status + " " + j.error); };
   await bad("ペンネーム 空", { field_25: "" }, "invalid penname");
   await bad("ペンネーム 空白だけ", { field_25: "　 " }, "invalid penname");
-  await bad("ペンネーム 11文字", { field_25: "あいうえおかきくけこさ" }, "invalid penname");
+  await bad("ペンネーム 101文字（データベースの上限）", { field_25: "あ".repeat(101) }, "too long");
   await bad("ペンネーム null", { field_25: null }, "invalid penname");
   await bad("場所 ちがう", { place: "tokyo" }, "invalid place");
   await bad("場所 ほかの学校の場所", { place: "kagami" }, "invalid place");

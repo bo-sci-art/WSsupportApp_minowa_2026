@@ -23,15 +23,14 @@
 //                      一覧・画像・管理（/export・PUT・PATCH・DELETE）は、止めているときも使える
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;          // 画像の上限（1000px JPEG なら 0.3MB 前後）
-const MAX_TEXT = { field_23: 100, field_24: 500, field_25: 60, Message: 300, Body: 1000, place: 20, collage: 3000, Mabling: 3000, hazard: 500, target: 200, creationDate: 20 };
+const MAX_TEXT = { field_23: 100, field_24: 500, field_25: 100, Message: 300, Body: 1000, place: 20, collage: 3000, Mabling: 3000, hazard: 500, target: 200, creationDate: 20 };
 // 箕輪小版：作者は「ペンネーム」（列は field_25 のまま）。出席番号は使わない（使うには保護者の許可がいるため）
-//   1〜10文字（ひらがな・カタカナ・漢字・英字・数字など）。改行や制御文字は入れない。だれかと同じでもよい
+//   文字数の決まりはない（データベースが大きくなりすぎないよう、MAX_TEXT の 100 文字で切るだけ）。改行や制御文字は入れない。だれかと同じでもよい
 //   空白は1つにまとめ、前後の空白はとる。※ workshop/common/places.js の minowaPenName と同じ決まりにする
-const PENNAME_MAX = 10;
 function penName(v) {
   if (v === null || v === undefined) return null;
   const s = String(v).replace(/[\s　]+/g, " ").trim();
-  if (!s || /[\u0000-\u001F\u007F]/.test(s) || Array.from(s).length > PENNAME_MAX) return null;
+  if (!s || /[\u0000-\u001F\u007F]/.test(s)) return null;
   return s;
 }
 // 地点の種類：固定5か所のどれか、または「その他」（児童が地図にピンを置いた場所）
@@ -110,7 +109,7 @@ async function submit(request, env, cors) {
     const v = props[k];
     fields[k] = (v === null || v === undefined) ? null : String(v).slice(0, MAX_TEXT[k]);
   }
-  fields.field_25 = penName(props.field_25);
+  fields.field_25 = penName(fields.field_25);
   if (!fields.field_25) return json({ ok: false, error: "invalid penname" }, 400, cors);
   if (!fields.place || PLACES.indexOf(fields.place) < 0) return json({ ok: false, error: "invalid place" }, 400, cors);
   if (!fields.creationDate) fields.creationDate = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);

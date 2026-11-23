@@ -57,13 +57,12 @@
     return v || '';
   };
   // 作者のペンネーム（出席番号は使わない。使うには保護者の許可がいるため）。worker/src/index.js の penName と同じ決まりにする
-  //   1〜10文字。空白は1つにまとめ、前後の空白はとる。改行や制御文字は入れない。だれかと同じでもよい
-  window.MINOWA_PENNAME_MAX = 10;
+  //   文字数の決まりはない。空白は1つにまとめ、前後の空白はとる。改行や制御文字は入れない。だれかと同じでもよい
   // 決まりに合えば整えたペンネーム、合わなければ null
   window.minowaPenName = function (v) {
     if (v === null || v === undefined) return null;
     var s = String(v).replace(/[\s\u3000]+/g, ' ').trim();
-    if (!s || /[\u0000-\u001F\u007F]/.test(s) || Array.from(s).length > window.MINOWA_PENNAME_MAX) return null;
+    if (!s || /[\u0000-\u001F\u007F]/.test(s)) return null;
     return s;
   };
   // 地図に固定5か所が全部入る範囲

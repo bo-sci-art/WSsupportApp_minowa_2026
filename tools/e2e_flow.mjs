@@ -248,12 +248,12 @@ async function flow(label, viewport, placeId, number) {
   await page.locator(".phase-option").nth(1).click();
   await page.fill("#creatorNumber", "   ");
   const blankBlocked = await page.locator("#nextBtn").isDisabled();
-  await page.fill("#creatorNumber", "あいうえおかきくけこさ");   // 11文字
-  run.checks.badNumberBlocked = blankBlocked && await page.locator("#nextBtn").isDisabled();
+  await page.fill("#creatorNumber", "あいうえおかきくけこさしすせそ");   // 15文字（文字数の決まりはないので進める）
+  run.checks.badNumberBlocked = blankBlocked && !(await page.locator("#nextBtn").isDisabled());
   await page.fill("#creatorNumber", "  " + number + "  ");   // 前後の空白はとって保存する
   run.checks.numberInputmode = await page.getAttribute("#creatorNumber", "inputmode");
   await shot(page, run, "S7_message");
-  step(`S7 入力：空白だけ・11文字のペンネームでは進めない=${run.checks.badNumberBlocked}、ペンネーム「${number}」`);
+  step(`S7 入力：空白だけでは進めない・15文字は進める=${run.checks.badNumberBlocked}、ペンネーム「${number}」`);
   await page.click("#nextBtn");
 
   // S8 確認して登録（スクロールなしで「登録する」が見える）
@@ -475,7 +475,7 @@ for (const r of report.runs) {
   if (r.restore.stampsAfter !== r.restore.stampsBefore) problems.push(`[${r.label}] スタンプが復元されない`);
   if (!c.alpha || !c.alpha.slider || c.alpha.after !== 1 || !(c.alpha.light < 0.4)) problems.push(`[${r.label}] 濃さのレバーが効かない ${JSON.stringify(c.alpha)}`);
   if (c.alphaKept !== 1) problems.push(`[${r.label}] 濃さが保存されない（もどったあと ${c.alphaKept}）`);
-  if (!c.badNumberBlocked) problems.push(`[${r.label}] 空白だけ・11文字のペンネームで進めてしまう`);
+  if (!c.badNumberBlocked) problems.push(`[${r.label}] 空白だけで進めてしまう、または15文字で進めない`);
   if (c.numberInputmode === "numeric") problems.push(`[${r.label}] ペンネームなのに数字キーボードになる`);
   if (c.s8.scroll > 0 || !c.s8.submitVisible || c.s8.rows !== 5 || c.s8.empty) problems.push(`[${r.label}] S8 が1画面に収まらない／未入力あり ${JSON.stringify(c.s8)}`);
   if (!/修正/.test(c.editLabel) || !c.editBack) problems.push(`[${r.label}] 「直す」から確認画面にもどれない`);

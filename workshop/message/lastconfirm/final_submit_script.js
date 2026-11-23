@@ -7,7 +7,7 @@
  * - Body     : この作品で伝えたいこと
  * - field_23 : いつの行動か（事前／災害時／復旧時）
  * - field_24 : 使わない（箕輪小版はハザードマップを選ばない。空のまま送る）
- * - field_25 : 作者のペンネーム（1〜10文字）
+ * - field_25 : 作者のペンネーム
  * - place    : 地点の種類（apita / shintsunashima / conforte / hiyoshinooka / pump / other）
  *   lat / lon : 固定5か所はその場所の固定の座標、other は児童が地図に置いたピンの座標
  * - Mabling・collage は使わない（空のまま）
