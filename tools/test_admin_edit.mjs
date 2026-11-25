@@ -40,7 +40,7 @@ try {
   for (const [label, viewport] of [["pc", { width: 1280, height: 800 }], ["ipad", { width: 768, height: 1024 }]]) {
     // 毎回、登録したときの値にもどしてから試す
     await fetch(`${W}/artworks/${id}`, { method: "PUT", headers: { ...AUTH, "Content-Type": "application/json" },
-      body: JSON.stringify({ field_25: "4609", place: "apita", field_23: "事前", Message: "テスト：まちがえた{まちがえた}タイトル" }) });
+      body: JSON.stringify({ field_25: "4609", place: "apita", field_23: "事前", field_24: null, Message: "テスト：まちがえた{まちがえた}タイトル" }) });
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
     page.on("dialog", d => { ok(`[${label}] ブラウザの confirm/alert は出さない`, false, d.message()); d.dismiss(); });
@@ -59,7 +59,7 @@ try {
     ok(`[${label}] 「確認・修正」でパネルが開く`, await page.locator("#editOverlay").isVisible());
     ok(`[${label}] ボタンを押しても行のチェックはつかない`, !(await row.locator("input[type=checkbox]").isChecked()));
     ok(`[${label}] 今の値が入っている`, (await page.inputValue("#efNumber")) === "4609" && (await page.inputValue("#efTitle")) === "テスト：まちがえた{まちがえた}タイトル" && await page.locator('input[name="efPlace"][value="apita"]').isChecked());
-    ok(`[${label}] 場所の選択肢は6つ・「見たハザードマップ」の欄はない`, (await page.locator('input[name="efPlace"]').count()) === 6 && (await page.locator('[data-field="field_24"]').count()) === 0);
+    ok(`[${label}] 場所の選択肢は6つ・作品にする災害の選択肢は8つ`, (await page.locator('input[name="efPlace"]').count()) === 6 && (await page.locator('input[name="efHazard"]').count()) === 8);
     ok(`[${label}] まだ直していないので「保存する」は押せない`, await page.locator("#editSave").isDisabled());
     await page.screenshot({ path: path.join(OUT, `${label}_01_panel.png`) });
 
@@ -73,8 +73,9 @@ try {
     await page.fill("#efTitle", "直したタイトル");
     await page.locator('input[name="efPlace"][value="pump"]').check();
     await page.locator('input[name="efPhase"][value="災害時"]').check();
+    await page.locator('input[name="efHazard"][value="高潮"]').check();
     const changed = await page.locator("#editForm .ef.changed").evaluateAll(els => els.map(e => e.dataset.field));
-    ok(`[${label}] 直したところに色がつく`, ["Message", "place", "field_23", "field_25"].every(f => changed.includes(f)) && !changed.includes("Body"), changed.join(","));
+    ok(`[${label}] 直したところに色がつく`, ["Message", "place", "field_23", "field_24", "field_25"].every(f => changed.includes(f)) && !changed.includes("Body"), changed.join(","));
     const note = await page.locator("#efPlaceNote").innerText();
     ok(`[${label}] 場所を変えると「地図のピンも〇〇に移ります」`, /ピンも.*北綱島.*ポンプ場.*移ります/.test(note.replace(/\s/g, "")), note.replace(/\s+/g, ""));
     await page.screenshot({ path: path.join(OUT, `${label}_02_changed.png`), fullPage: false });
@@ -98,7 +99,7 @@ try {
     await page.click("#editSave");
     await page.locator("#dlgOverlay").waitFor();
     const diff = await page.locator(".dlg-diff tbody tr").allInnerTexts();
-    ok(`[${label}] 保存の確認に「変更前 → 変更後」`, diff.length === 4 && diff.some(t => /場所.*アピタテラス.*北綱島ポンプ場/.test(t.replace(/\s/g, ""))), diff.map(t => t.replace(/\s+/g, " ")).join(" | "));
+    ok(`[${label}] 保存の確認に「変更前 → 変更後」`, diff.length === 5 && diff.some(t => /作品にする災害.*高潮/.test(t.replace(/\s/g, ""))) && diff.some(t => /場所.*アピタテラス.*北綱島ポンプ場/.test(t.replace(/\s/g, ""))), diff.map(t => t.replace(/\s+/g, " ")).join(" | "));
     await page.screenshot({ path: path.join(OUT, `${label}_03_confirm.png`) });
     await page.click("#dlgOk");
     await page.locator("#resultMsg").filter({ hasText: "保存しました" }).waitFor({ timeout: 10000 });
@@ -106,7 +107,7 @@ try {
 
     const f = await exportOne(id);
     const P = f.properties;
-    ok(`[${label}] Worker に保存された`, P.field_25 === (label === "pc" ? "ぼうさいPC" : "防災アイパッド") && P.Message === "直したタイトル" && P.place === "pump" && P.field_23 === "事前, 災害時" && !P.field_24,
+    ok(`[${label}] Worker に保存された`, P.field_25 === (label === "pc" ? "ぼうさいPC" : "防災アイパッド") && P.Message === "直したタイトル" && P.place === "pump" && P.field_23 === "事前, 災害時" && P.field_24 === "高潮",
       [P.field_25, P.Message, P.place, P.field_23, P.field_24].join(" / "));
     ok(`[${label}] 伝えたいこと（ふりがな記法つき）はそのまま`, P.Body === "大雨{おおあめ}のときは早めに逃げる。", P.Body);
     ok(`[${label}] ピンが北綱島ポンプ場に移った`, f.geometry.coordinates[0] === 139.65348008 && f.geometry.coordinates[1] === 35.53960528);
@@ -145,6 +146,9 @@ try {
       ok("[ipad] 「その他」にするとピンの地図が出る", await page.locator("#efPinBox").isVisible());
       await page.click("#editSave");
       ok("[ipad] ピンを置かずに保存 →「地図をタップしてピンを置いて」", /ピンを置いて/.test(await page.locator("#editError").innerText()));
+      // パネルが長いので、「保存する」を押したあとは地図が画面の上に隠れている。地図まで戻してからタップする
+      await page.locator("#efPinMap").scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
       const mb = await page.locator("#efPinMap").boundingBox();
       await page.mouse.click(mb.x + mb.width * 0.5, mb.y + mb.height * 0.5);
       await page.waitForTimeout(300);

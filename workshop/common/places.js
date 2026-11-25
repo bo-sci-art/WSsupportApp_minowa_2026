@@ -56,6 +56,23 @@
     for (var i = 0; i < window.MINOWA_PHASES.length; i++) if (window.MINOWA_PHASES[i].value === v) return window.MINOWA_PHASES[i].label;
     return v || '';
   };
+  // 作品にする災害（いくつでも選べる）。授業で配る「作品の計画シート」の8つと同じ順・同じ言葉
+  //   value：保存する値（field_24）。既存アプリ（大人版 WSspportApp_2026）と同じ正式名にして、防災行動マップの分類がそのまま使えるようにする
+  //   label：画面の言葉（計画シートの言葉）。worker/src/index.js の HAZARDS と同じ値にする
+  window.MINOWA_HAZARDS = [
+    { value: '洪水（外水氾濫）',           label: '洪水{こうずい}（川{かわ}があふれる）' },
+    { value: '内水氾濫',                   label: '内水{ないすい}はんらん（下水{げすい}があふれる）' },
+    { value: '高潮',                       label: '高潮{たかしお}' },
+    { value: '土砂災害（急傾斜地の崩壊）', label: '土砂{どしゃ}災害{さいがい}（がけくずれ）' },
+    { value: '地震の揺れ（震度）',         label: '地震{じしん}の揺{ゆ}れ' },
+    { value: '津波',                       label: '津波{つなみ}' },
+    { value: '液状化危険度',               label: '液状化{えきじょうか}' },
+    { value: '地震火災（焼失棟数）',       label: '火災{かさい}' }
+  ];
+  window.minowaHazardLabel = function (v) {
+    for (var i = 0; i < window.MINOWA_HAZARDS.length; i++) if (window.MINOWA_HAZARDS[i].value === v) return window.MINOWA_HAZARDS[i].label;
+    return v || '';
+  };
   // 作者のペンネーム（出席番号は使わない。使うには保護者の許可がいるため）。worker/src/index.js の penName と同じ決まりにする
   //   文字数の決まりはない。空白は1つにまとめ、前後の空白はとる。改行や制御文字は入れない。だれかと同じでもよい
   // 決まりに合えば整えたペンネーム、合わなければ null

@@ -550,3 +550,40 @@ body {
 @media screen and (min-width: 900px) and (max-width: 1024px) and (orientation: landscape) {
   .place-buttons { grid-template-columns: 1fr; }
 }
+
+/* ===== 箕輪小版（2026/11/25）：作品にする災害を選ぶ（計画シートの8つ・いくつでも） =====
+   横向き：左に ①場所（1列）、右に ②災害（2列）と地図。縦向き：①場所 → ②災害 → 地図（3列にして1画面に収める） */
+.content { grid-template-columns: 0.8fr 1.2fr; grid-template-rows: auto minmax(0, 1fr); overflow-y: auto; }
+.place-section { grid-column: 1; grid-row: 1 / span 2; overflow: visible; }
+.hazard-section { grid-column: 2; grid-row: 1; overflow: visible; }
+.place-map-section { grid-column: 2; grid-row: 2; min-height: 0; }
+.place-map-container .map { min-height: 180px; }
+.place-buttons { grid-template-columns: 1fr; margin-bottom: 4px; }
+.place-btn { min-height: 54px; font-size: 1.15rem; }
+.place-btn .place-sub { display: block; margin-left: 0; font-size: .8rem; line-height: 1.6; }
+.hazard-section .section-title, .hazard-section .section-description { margin-bottom: 4px; }
+.hazard-selection { grid-template-columns: 1fr 1fr; overflow: visible; padding-right: 0; gap: 6px; flex: none; }
+.hazard-option { min-height: 44px; padding: 2px 10px; }
+.hazard-option label { font-size: .98rem; line-height: 1.9; }
+.hazard-option input[type="checkbox"] { width: 24px; height: 24px; }
+@media screen and (max-width: 1024px) {
+  .content { grid-template-columns: 1fr !important; grid-template-rows: auto auto minmax(220px, 1fr) !important; gap: 10px !important; }
+  .place-section { grid-column: 1; grid-row: 1; }
+  .hazard-section { grid-column: 1; grid-row: 2; }
+  .place-map-section { grid-column: 1; grid-row: 3; }
+  .place-section .section-description { display: none; }
+  .place-buttons { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .place-btn { min-height: 50px; font-size: 1.05rem; padding: 4px 10px; }
+  .hazard-selection { grid-template-columns: 1fr 1fr 1fr !important; }
+  .hazard-option label { font-size: .92rem; }
+  .input-section { padding: 10px 14px !important; }
+}
+@media screen and (min-width: 900px) and (max-width: 1024px) and (orientation: landscape) {
+  .content { grid-template-columns: 0.8fr 1.2fr !important; grid-template-rows: auto minmax(0, 1fr) !important; }
+  .place-section { grid-column: 1; grid-row: 1 / span 2; }
+  .hazard-section { grid-column: 2; grid-row: 1; }
+  .place-map-section { grid-column: 2; grid-row: 2; }
+  .place-section .section-description { display: block; }
+  .place-buttons { grid-template-columns: 1fr; }
+  .hazard-selection { grid-template-columns: 1fr 1fr !important; }
+}

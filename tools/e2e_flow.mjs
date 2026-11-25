@@ -86,7 +86,7 @@ async function shot(page, run, name) {
   run.shots.push(file);
 }
 
-async function flow(label, viewport, placeId, number) {
+async function flow(label, viewport, placeId, number, hazards) {
   const run = { label, viewport, n: 1, shots: [], pages: [], steps: [], errors: [], checks: {}, yagamiRequests: [], workerHosts: new Set() };
   report.runs.push(run);
   const step = (s) => { run.steps.push(s); console.log(`[${label}] ${s}`); };
@@ -117,11 +117,13 @@ async function flow(label, viewport, placeId, number) {
   await shot(page, run, "S0_start");
   await page.click("#startBtn");
 
-  // S1 場所（6つのボタン：固定5か所＋その他）
+  // S1 場所（6つのボタン：固定5か所＋その他）と、作品にする災害（計画シートの8つ・いくつでも）
   await page.waitForURL(/workshop\/map\/Log\/log_hazard_map/, NAV);
   await page.waitForTimeout(800);
   run.checks.s1Buttons = await page.locator(".place-btn").count();
   run.checks.s1Markers = await page.locator(".place-marker").count();
+  run.checks.s1Hazards = await page.locator(".hazard-option").count();
+  run.checks.hazardsExpected = hazards.join(", ");
   run.checks.s1Stepper = (await page.locator(".step-indicator").innerText()).replace(/\s+/g, "");
   await shot(page, run, "S1_place_empty");
   await page.click(`.place-btn[data-place="${placeId}"]`);
@@ -153,9 +155,15 @@ async function flow(label, viewport, placeId, number) {
   } else {
     run.pin = await page.evaluate(() => JSON.parse(localStorage.getItem("minowa_hazardMapLog") || "{}").location);
   }
+  // 場所を決めても、災害を選ぶまで「つぎへ」は押せない
+  run.checks.hazardNextBlocked = await page.locator("#nextBtn").isDisabled() && await page.locator("#hazardValidation").isVisible();
+  for (const v of hazards) await page.click(`.hazard-option[data-hazard="${v}"] label`);
+  run.checks.hazardsSaved = await page.evaluate(() => JSON.parse(localStorage.getItem("minowa_hazardMapLog") || "{}").hazards);
+  run.checks.hazardNextOk = !(await page.locator("#nextBtn").isDisabled());
   await shot(page, run, "S1_place");
   step(`S1 場所：ボタン ${run.checks.s1Buttons} 個・地図の目印 ${run.checks.s1Markers} 個から ${placeId} を選択 → ${JSON.stringify(run.pin)}` +
-    (placeId === "other" ? `（ピン前は進めない=${run.checks.otherNextBlocked}、枠の外は置けない=${run.checks.outOfAreaBlocked}、確認「${run.checks.confirmTitle}」）` : ""));
+    (placeId === "other" ? `（ピン前は進めない=${run.checks.otherNextBlocked}、枠の外は置けない=${run.checks.outOfAreaBlocked}、確認「${run.checks.confirmTitle}」）` : "") +
+    `、災害の選択肢 ${run.checks.s1Hazards} 個（選ぶ前は進めない=${run.checks.hazardNextBlocked}）→ ${JSON.stringify(run.checks.hazardsSaved)}`);
   await page.click("#nextBtn");
 
   // 休み時間：タブを閉じて開き直す → 「つづきから」（「1コマ目はここまで」の画面はなくした）
@@ -394,7 +402,7 @@ async function flow(label, viewport, placeId, number) {
     run.checks.detail.hzOn = await page.locator(".dv-hz-chip.on").count() === 1;
     await shot(page, run, "S9d_detail_hazard");
   }
-  step(`作品ページ：ペンネーム ${run.checks.detail.number}、場所「${run.checks.detail.place}」、伝えたいこと ${run.checks.detail.body ? "あり" : "なし"}、災害の行を隠す=${run.checks.detail.hazardRowHidden}、次の作品ボタン=${run.checks.detail.navVisible ? "あり" : "なし"}、ハザードマップを重ねる=${run.checks.detail.hzOn}`);
+  step(`作品ページ：ペンネーム ${run.checks.detail.number}、場所「${run.checks.detail.place}」、伝えたいこと ${run.checks.detail.body ? "あり" : "なし"}、災害の行を出す=${!run.checks.detail.hazardRowHidden}、次の作品ボタン=${run.checks.detail.navVisible ? "あり" : "なし"}、ハザードマップを重ねる=${run.checks.detail.hzOn}`);
 
   // テスト作品を削除
   const del = await fetch(`${WORKER}/artworks/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + ADMIN_KEY } }).then(r => r.json());
@@ -446,8 +454,8 @@ async function samePlaceTen() {
 }
 
 // 横向き：固定の地点（新綱島駅）、縦向き：「その他」（地図にピンを置く）
-await flow("landscape", { width: 1180, height: 820 }, "shintsunashima", "E2Eぼうさい1");
-await flow("portrait", { width: 820, height: 1180 }, "other", "E2E防災ヒーロー");
+await flow("landscape", { width: 1180, height: 820 }, "shintsunashima", "E2Eぼうさい1", ["洪水（外水氾濫）", "内水氾濫"]);
+await flow("portrait", { width: 820, height: 1180 }, "other", "E2E防災ヒーロー", ["地震の揺れ（震度）", "液状化危険度", "地震火災（焼失棟数）"]);
 await samePlaceTen();
 
 fs.writeFileSync(path.resolve("tools/out/report.json"), JSON.stringify(report, null, 2));
@@ -460,6 +468,7 @@ for (const r of report.runs) {
   if (r.yagamiRequests.length) problems.push(`[${r.label}] 矢上小版へのアクセスがある: ${r.yagamiRequests.join(" / ")}`);
   if (r.workerHosts.some(h => !/^(minowa-submit\.kazuki131214\.workers\.dev|127\.0\.0\.1:8787)$/.test(h))) problems.push(`[${r.label}] 箕輪小版以外の Worker にアクセスした: ${r.workerHosts.join(", ")}`);
   if (!r.deleted) problems.push(`[${r.label}] 削除できていない`);
+  if (c.s1Hazards !== 8 || !c.hazardNextBlocked || !c.hazardNextOk) problems.push(`[${r.label}] S1 の災害の選択（8つ・選ぶまで進めない）がおかしい ${c.s1Hazards}/${c.hazardNextBlocked}/${c.hazardNextOk}`);
   if (c.s1Buttons !== 6 || c.s1Markers !== 5) problems.push(`[${r.label}] S1 のボタン（6つ）・地図の目印（5つ）の数がおかしい ${c.s1Buttons}/${c.s1Markers}`);
   if (!/^1場所/.test(c.s1Stepper)) problems.push(`[${r.label}] S1 のステップ表示がおかしい ${c.s1Stepper}`);
   if (c.marblingStepper !== "場所/マーブリング/コラージュ/メッセージ") problems.push(`[${r.label}] ステップ表示がおかしい ${c.marblingStepper}`);
@@ -477,7 +486,7 @@ for (const r of report.runs) {
   if (c.alphaKept !== 1) problems.push(`[${r.label}] 濃さが保存されない（もどったあと ${c.alphaKept}）`);
   if (!c.badNumberBlocked) problems.push(`[${r.label}] 空白だけで進めてしまう、または15文字で進めない`);
   if (c.numberInputmode === "numeric") problems.push(`[${r.label}] ペンネームなのに数字キーボードになる`);
-  if (c.s8.scroll > 0 || !c.s8.submitVisible || c.s8.rows !== 5 || c.s8.empty) problems.push(`[${r.label}] S8 が1画面に収まらない／未入力あり ${JSON.stringify(c.s8)}`);
+  if (c.s8.scroll > 0 || !c.s8.submitVisible || c.s8.rows !== 6 || c.s8.empty) problems.push(`[${r.label}] S8 が1画面に収まらない／未入力あり ${JSON.stringify(c.s8)}`);
   if (!/修正/.test(c.editLabel) || !c.editBack) problems.push(`[${r.label}] 「直す」から確認画面にもどれない`);
   if (r.redo) {
     if (r.redo.editUI.back || !/修正/.test(r.redo.editUI.next) || !r.redo.editUI.badge) problems.push(`[${r.label}] 修正用の画面のボタンがおかしい ${JSON.stringify(r.redo.editUI)}`);
@@ -487,6 +496,7 @@ for (const r of report.runs) {
   }
   const sf = c.savedFields || {};
   if (!sf.body || !/^E2E/.test(sf.number || "") || sf.place !== (other ? "other" : "shintsunashima") || sf.phase !== "災害時") problems.push(`[${r.label}] 保存された値がおかしい ${JSON.stringify(sf)}`);
+  if (sf.field_24 !== c.hazardsExpected) problems.push(`[${r.label}] 保存された災害がちがう ${sf.field_24} / ${c.hazardsExpected}`);
   if (!c.savedLatLonOK) problems.push(`[${r.label}] 保存された緯度経度が選んだ地点とちがう ${JSON.stringify(sf)} / ${JSON.stringify(r.pin)}`);
   if (!c.imageServed) problems.push(`[${r.label}] R2 の画像が読めない`);
   if (!c.guide || c.guide.filter(Boolean).length !== 4 || !c.guideClosed) problems.push(`[${r.label}] マップの使い方の写真が出ない／閉じない ${JSON.stringify(c.guide)}`);
@@ -497,7 +507,7 @@ for (const r of report.runs) {
   if (!c.search.hasMine || !c.search.allMatch) problems.push(`[${r.label}] ペンネームで探す結果がおかしい ${JSON.stringify(c.search)}`);
   const d = c.detail || {};
   if (other ? (!String(d.place).includes("その他") || d.navVisible) : !String(d.place).includes("新綱島駅")) problems.push(`[${r.label}] 作品ページの場所・次の作品がおかしい ${JSON.stringify(d)}`);
-  if (!d.hazardRowHidden || !d.hzOn) problems.push(`[${r.label}] 作品ページのハザードマップの表示がおかしい ${JSON.stringify(d)}`);
+  if (d.hazardRowHidden || !d.hzOn) problems.push(`[${r.label}] 作品ページの災害の行・ハザードマップの表示がおかしい ${JSON.stringify(d)}`);
   for (const p of r.pages) for (const f of p.frames) {
     if (f.noRuby.length) problems.push(`[${r.label}] ${p.name} ${f.url}: ルビなし ${JSON.stringify(f.noRuby)}`);
     if (f.hOverflow > 0) problems.push(`[${r.label}] ${p.name} ${f.url}: 横にはみ出し ${f.hOverflow}px`);

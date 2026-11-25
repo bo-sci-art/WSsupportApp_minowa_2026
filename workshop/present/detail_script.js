@@ -21,13 +21,9 @@ document.addEventListener("DOMContentLoaded", function () {
   setupDetailTutorial();
   if (!artId) { alert("作品が見つかりませんでした。マップに戻ります。"); window.location.href = mapUrl; return; }
 
-  // 災害の名前（保存されている正式名 → 画面の言葉）
-  const HAZARD_LABELS = {
-    "洪水（外水氾濫）": "洪水{こうずい}（外水氾濫{がいすいはんらん}）",
-    "高潮": "高潮{たかしお}",
-    "土砂災害（急傾斜地の崩壊）": "土砂{どしゃ}災害{さいがい}（急傾斜地{きゅうけいしゃち}の崩壊{ほうかい}）",
-    "地震の揺れ（震度）": "地震{じしん}の揺{ゆ}れ（震度{しんど}）"
-  };
+  // 災害の名前（保存されている正式名 → 画面の言葉。計画シートと同じ言葉。common/places.js の MINOWA_HAZARDS）
+  const HAZARD_LABELS = {};
+  (window.MINOWA_HAZARDS || []).forEach(h => { HAZARD_LABELS[h.value] = h.label; });
   // 国土地理院の重ねるハザードマップ（作品が選んだ災害だけボタンを出す）
   const HZ = "https://disaportaldata.gsi.go.jp/raster/";
   const HZ_DEFS = [
@@ -104,7 +100,7 @@ document.addEventListener("DOMContentLoaded", function () {
     L.marker(center, { icon: L.divIcon({ className: "dv-pin", html: '<span style="background:' + color + '"></span>', iconSize: [20, 20], iconAnchor: [10, 10] }) }).addTo(map);
     const box = document.getElementById("hz-chips");
     // 作品が選んだ災害のハザードマップを、ボタン1つでまとめて重ねる／外す（右側をスクロールさせないため）
-    //   箕輪小版は作品ごとに災害を選ばないので、災害が入っていない作品は3つ（洪水・高潮・土砂災害）をまとめて重ねる
+    //   災害が入っていない作品（2026/11/25 より前）や、ここで重ねられない災害（内水・地震・津波・液状化・火災）だけの作品は、3つ（洪水・高潮・土砂災害）をまとめて重ねる
     const picked = HZ_DEFS.filter(d => d.re.test(P.field_24 || ""));
     const defs = picked.length ? picked : HZ_DEFS;
     if (defs.length) {

@@ -6,7 +6,7 @@
  * - Message  : 作品のタイトル
  * - Body     : この作品で伝えたいこと
  * - field_23 : いつの行動か（事前／災害時／復旧時）
- * - field_24 : 使わない（箕輪小版はハザードマップを選ばない。空のまま送る）
+ * - field_24 : 作品にする災害（計画シートの8つから。既存アプリと同じ正式名をカンマ区切り）
  * - field_25 : 作者のペンネーム
  * - place    : 地点の種類（apita / shintsunashima / conforte / hiyoshinooka / pump / other）
  *   lat / lon : 固定5か所はその場所の固定の座標、other は児童が地図に置いたピンの座標
@@ -30,7 +30,7 @@ const CONFIG = {
 };
 function workerBase() { return ((window.MINOWA_CONFIG && window.MINOWA_CONFIG.WORKER_URL) || CONFIG.WORKER_URL).replace(/\/+$/, ''); }
 
-let appData = { location: null, art: {} };
+let appData = { location: null, hazards: [], art: {} };
 let isSubmitting = false;
 
 function readJSON(k) { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } }
@@ -40,6 +40,8 @@ function rb(s) { return window.rubyHTML ? window.rubyHTML(s) : s; }
 function loadData() {
     const h = readJSON('minowa_hazardMapLog');
     appData.location = validLocation(h.location) ? h.location : null;
+    const known = window.MINOWA_HAZARDS.map(x => x.value);
+    appData.hazards = known.filter(v => Array.isArray(h.hazards) && h.hazards.includes(v));
     appData.art = readJSON('minowa_artworkSubmit');
 }
 // 選んだ地点が正しいか（固定5か所のどれか、または「その他」で範囲内のピン）
@@ -73,7 +75,8 @@ function renderSummary() {
         row('伝{つた}えたいこと', a.body ? '<span class="s8-v-body" data-user-text>' + esc(a.body) + '</span>' : NONE, 'artwork', !a.body),
         row('いつの行動{こうどう}', a.phase ? '<span class="s8-tag">' + rb(window.minowaPhaseLabel(a.phase)) + '</span>' : NONE_SEL, 'artwork', !a.phase),
         row('ペンネーム', window.minowaPenName(a.number) ? '<span class="s8-v-num" data-user-text>' + esc(window.minowaPenName(a.number)) + '</span>' : NONE, 'artwork', !window.minowaPenName(a.number)),
-        row('作品{さくひん}にする場所{ばしょ}', place ? '📍 ' + rb(place.name) + (place.isOther ? ' <span class="s8-v-sub">' + rb('（地図{ちず}にピンを置{お}いた場所{ばしょ}）') + '</span>' : '') : NONE_SEL, 'place', !place)
+        row('作品{さくひん}にする場所{ばしょ}', place ? '📍 ' + rb(place.name) + (place.isOther ? ' <span class="s8-v-sub">' + rb('（地図{ちず}にピンを置{お}いた場所{ばしょ}）') + '</span>' : '') : NONE_SEL, 'place', !place),
+        row('作品{さくひん}にする災害{さいがい}', appData.hazards.length ? appData.hazards.map(v => '<span class="s8-tag">' + rb(window.minowaHazardLabel(v)) + '</span>').join('') : NONE_SEL, 'place', !appData.hazards.length)
     ].join('');
     const list = document.getElementById('summaryList');
     list.innerHTML = html;
@@ -88,6 +91,7 @@ function missingItems() {
     if (!a.phase) m.push('いつの行動か');
     if (!window.minowaPenName(a.number)) m.push('ペンネーム');
     if (!appData.location) m.push('場所');
+    if (!appData.hazards.length) m.push('災害');
     return m;
 }
 
@@ -183,7 +187,7 @@ function buildSubmitPayload(imageDataURL) {
         lon: ll.lon,
         properties: {
             field_23: a.phase || null,
-            field_24: null,
+            field_24: appData.hazards.join(', ') || null,
             field_25: window.minowaPenName(a.number),
             Message: a.title || '',
             Body: a.body || '',

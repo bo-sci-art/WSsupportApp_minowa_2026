@@ -82,7 +82,7 @@ for (const screenOpen of [false, true]) {
   await page.goto(`${APP}/workshop/start/index.html`, { waitUntil: "domcontentloaded" });
   await page.evaluate(([px]) => {
     localStorage.removeItem("minowa_lastSubmittedArtworkId");
-    localStorage.setItem("minowa_hazardMapLog", JSON.stringify({ location: { lat: 35.536551, lon: 139.636642, place: "shintsunashima", name: "新綱島駅" } }));
+    localStorage.setItem("minowa_hazardMapLog", JSON.stringify({ location: { lat: 35.536551, lon: 139.636642, place: "shintsunashima", name: "新綱島駅" }, hazards: ["洪水（外水氾濫）"] }));
     localStorage.setItem("minowa_artworkSubmit", JSON.stringify({ title: "受付テスト", body: "テスト", phase: "事前", number: "4631" }));
     localStorage.setItem("minowa_artworkImage", px);
   }, [PX]);

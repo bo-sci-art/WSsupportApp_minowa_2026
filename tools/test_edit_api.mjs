@@ -4,7 +4,7 @@
 //   node tools/test_edit_api.mjs [WorkerのURL=http://127.0.0.1:8787] [ADMIN_KEY=local-admin-key-for-test]
 //
 // テストで登録した作品は、最後に DELETE で消す。本番の Worker では使わない（作品を登録して直すため）。
-// 箕輪小版：場所は6種類、作者はペンネーム（文字数の決まりなし）、field_24（見たハザードマップ）は直せない。
+// 箕輪小版：場所は6種類、作者はペンネーム（文字数の決まりなし）、field_24 は作品にする災害（計画シートの8つ。直せる）。
 //   「その他」の座標の扱い（案A）も確かめる：固定→固定・その他→固定（もとのピンを残す）・固定→その他（ピンが必要）・その他→その他
 const BASE = (process.argv[2] || "http://127.0.0.1:8787").replace(/\/+$/, "");
 const KEY = process.argv[3] || "local-admin-key-for-test";
@@ -51,7 +51,12 @@ try {
   await bad("場所 ちがう", { place: "tokyo" }, "invalid place");
   await bad("場所 ほかの学校の場所", { place: "kagami" }, "invalid place");
   await bad("いつの行動 ちがう", { field_23: "事前, あした" }, "invalid phase");
-  await bad("見たハザードマップは直せない（field_24 だけ）", { field_24: "高潮" }, "nothing to update");
+  await bad("作品にする災害 ちがう名前", { field_24: "高潮, 竜巻" }, "invalid hazard");
+  {
+    const r0 = await fetch(BASE + "/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ secret: SECRET, lat: 35.54195, lon: 139.641434, imageBase64: PX, imageExt: "png", properties: { field_25: "x", place: "apita", field_24: "竜巻" } }) });
+    const j0 = await r0.json().catch(() => ({}));
+    ok("2. 登録：作品にする災害がちがう名前 → 400 invalid hazard", r0.status === 400 && j0.error === "invalid hazard", r0.status + " " + j0.error);
+  }
   await bad("固定の場所にピンを送る", { place: "pump", lat: 35.54, lon: 139.64 }, "pin only for other");
   await bad("ピンが範囲の外", { place: "other", lat: 35.60, lon: 139.70 }, "location out of area");
   await bad("固定→その他でピンがない（もとのピンもない）", { place: "other" }, "pin required");
@@ -62,12 +67,12 @@ try {
   ok("2. ない id → 404", r.status === 404, r.status);
 
   // 3. 場所を変えると座標も変わる（固定 → 固定）
-  r = await put(id, { place: "pump", field_23: ["事前", "災害時"], field_25: "  ぼうさい　ヒーロー ", Body: "直した文" });
+  r = await put(id, { place: "pump", field_23: ["事前", "災害時"], field_24: "津波, 洪水（外水氾濫）, 津波", field_25: "  ぼうさい　ヒーロー ", Body: "直した文" });
   j = await r.json();
   const pub = await findPublic(id);
   const c = pub && pub.geometry.coordinates;
   ok("3. 場所 pump → 座標が北綱島ポンプ場に", j.ok && c && c[0] === 139.65348008 && c[1] === 35.53960528, JSON.stringify(c));
-  ok("3. いつの行動を2つ保存・field_24 は空のまま", pub.properties.field_23 === "事前, 災害時" && !pub.properties.field_24, pub.properties.field_23 + " / " + pub.properties.field_24);
+  ok("3. いつの行動を2つ・作品にする災害を選択肢の順で保存", pub.properties.field_23 === "事前, 災害時" && pub.properties.field_24 === "洪水（外水氾濫）, 津波", pub.properties.field_23 + " / " + pub.properties.field_24);
   ok("3. ペンネーム（空白を整えて）・伝えたいことを保存", pub.properties.field_25 === "ぼうさい ヒーロー" && pub.properties.Body === "直した文", pub.properties.field_25);
 
   // 3b. 「その他」の座標（案A）

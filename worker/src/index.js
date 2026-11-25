@@ -9,7 +9,7 @@
 //   GET    /export          全作品を GeoJSON でダウンロード（ADMIN_KEY が必要）
 //   DELETE /artworks/:id    作品を1件削除（画像も消す。ADMIN_KEY が必要）
 //   PATCH  /artworks/:id    作品の公開・非公開を切り替える（{ "status": "approved" | "hidden" }。ADMIN_KEY が必要）
-//   PUT    /artworks/:id    作品の情報を直す（ペンネーム・タイトル・伝えたいこと・場所・いつの行動か。ADMIN_KEY が必要）
+//   PUT    /artworks/:id    作品の情報を直す（ペンネーム・タイトル・伝えたいこと・場所・いつの行動か・作品にする災害。ADMIN_KEY が必要）
 //                           送られてきた項目だけを直す。画像・status・created_at は変えない。extra.updated_at に直した日時を残す
 //                           場所を「その他」にするときは lat・lon（ピンの位置。AREA の中）もいっしょに送る（下の updateArtwork を参照）
 //
@@ -46,8 +46,19 @@ const PLACE_COORDS = {
   hiyoshinooka:   { lat: 35.548008,   lon: 139.642441 },
   pump:           { lat: 35.53960528, lon: 139.65348008 }
 };
-// いつの行動か（保存する値）。作品を直すときに確かめる（箕輪小版は「見たハザードマップ」field_24 を使わないので直さない）
+// いつの行動か（保存する値）。作品を直すときに確かめる
 const PHASES = ["事前", "災害時", "復旧時"];
+// 作品にする災害（field_24。いくつでも、カンマ区切り）。授業の「作品の計画シート」の8つ。
+//   値は既存アプリ（大人版）と同じ正式名。workshop/common/places.js の MINOWA_HAZARDS と同じ値・同じ順にする
+//   登録のときは、入っていればこの中の値かを確かめる（2026/11/25 より前の作品と古い画面のために、空でも受け付ける）
+const HAZARDS = ["洪水（外水氾濫）", "内水氾濫", "高潮", "土砂災害（急傾斜地の崩壊）", "地震の揺れ（震度）", "津波", "液状化危険度", "地震火災（焼失棟数）"];
+// 災害の値を確かめて、選択肢の順にならべる。ちがう値があれば { bad:[…] }
+function hazardList(v) {
+  const list = listOf(v);
+  const bad = list.filter(x => HAZARDS.indexOf(x) < 0);
+  if (bad.length) return { bad };
+  return { value: HAZARDS.filter(h => list.indexOf(h) >= 0).join(", ") || null };
+}
 const inArea = (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon) && lat >= AREA.south && lat <= AREA.north && lon >= AREA.west && lon <= AREA.east;
 const TEXT_FIELDS = Object.keys(MAX_TEXT);
 const IMAGE_TYPES = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
@@ -112,6 +123,9 @@ async function submit(request, env, cors) {
   fields.field_25 = penName(fields.field_25);
   if (!fields.field_25) return json({ ok: false, error: "invalid penname" }, 400, cors);
   if (!fields.place || PLACES.indexOf(fields.place) < 0) return json({ ok: false, error: "invalid place" }, 400, cors);
+  const hz = hazardList(props.field_24);
+  if (hz.bad) return json({ ok: false, error: "invalid hazard", values: hz.bad }, 400, cors);
+  fields.field_24 = hz.value;
   if (!fields.creationDate) fields.creationDate = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 
   // 画像（data URL か base64）
@@ -266,8 +280,8 @@ async function setArtworkStatus(request, idStr, env, cors) {
 // ---------------------------------------------------------------------------
 // PUT /artworks/:id（作品の情報を直す。先生が管理画面から使う）
 // ---------------------------------------------------------------------------
-// 箕輪小版：field_24（見たハザードマップ）は使わないので、直せる項目に入れない
-const EDITABLE = ["field_23", "field_25", "Message", "Body", "place"];
+// field_24 は「作品にする災害」（2026/11/25 から。空にもできる）
+const EDITABLE = ["field_23", "field_24", "field_25", "Message", "Body", "place"];
 function listOf(v) {
   if (v === null || v === undefined) return [];
   const arr = Array.isArray(v) ? v : String(v).split(/[,、]\s*/);
@@ -296,6 +310,12 @@ async function updateArtwork(request, idStr, env, cors) {
       const joined = Array.from(new Set(list)).join(", ");
       if (joined.length > MAX_TEXT[k]) return json({ ok: false, error: "too long", field: k, max: MAX_TEXT[k] }, 400, cors);
       set[k] = joined || null;
+      continue;
+    }
+    if (k === "field_24") {
+      const hz = hazardList(v);
+      if (hz.bad) return json({ ok: false, error: "invalid hazard", field: k, values: hz.bad }, 400, cors);
+      set[k] = hz.value;
       continue;
     }
     if (v !== null && typeof v !== "string" && typeof v !== "number") return json({ ok: false, error: "invalid value", field: k }, 400, cors);

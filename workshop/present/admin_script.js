@@ -90,6 +90,9 @@
   }
   function stripRuby(s) { return String(s || "").replace(/\{[^}]*\}/g, ""); }
   function listOf(v) { return String(v || "").split(/[,、]\s*/).map(function (x) { return x.trim(); }).filter(Boolean); }
+  function hazardName(v) {
+    return listOf(v).map(function (x) { return window.minowaHazardLabel ? stripRuby(window.minowaHazardLabel(x)) : x; }).join("・");
+  }
   function phaseName(v) {
     return listOf(v).map(function (x) { return window.minowaPhaseLabel ? stripRuby(window.minowaPhaseLabel(x)) : x; }).join("・");
   }
@@ -342,9 +345,9 @@
   }
 
   // ---------------- 確認・修正パネル ----------------
-  // 箕輪小版：「見たハザードマップ」（field_24）は使わないので、パネルに出さない。
+  // field_24 は「作品にする災害」（計画シートの8つ。いくつでも。空でもよい）
   // pin は「その他」のピンの位置（"緯度,経度"。D1 の lat・lon）。場所が「その他」のときだけ使う
-  var FIELD_NAMES = { field_25: "ペンネーム", Message: "タイトル", Body: "伝えたいこと", place: "場所", pin: "ピンの位置", field_23: "いつの行動か" };
+  var FIELD_NAMES = { field_25: "ペンネーム", Message: "タイトル", Body: "伝えたいこと", place: "場所", pin: "ピンの位置", field_23: "いつの行動か", field_24: "作品にする災害" };
   var MAX = { Message: 300, Body: 1000 };
   var editing = null;     // { id, orig: {...} }
   var saving = false;
@@ -365,6 +368,11 @@
       var lb = document.createElement("label"); lb.className = "ef-choice";
       lb.innerHTML = '<input type="checkbox" name="efPhase" value="' + esc(ph.value) + '"><span>' + rubyHTML(ph.label) + '</span><small>' + rubyHTML(ph.desc) + "</small>";
       $("efPhases").appendChild(lb);
+    });
+    (window.MINOWA_HAZARDS || []).forEach(function (hz) {
+      var lb = document.createElement("label"); lb.className = "ef-choice";
+      lb.innerHTML = '<input type="checkbox" name="efHazard" value="' + esc(hz.value) + '"><span>' + rubyHTML(hz.label) + "</span>";
+      $("efHazards").appendChild(lb);
     });
   }
 
@@ -431,7 +439,8 @@
       Body: $("efBody").value.trim(),
       place: place,
       pin: place === "other" ? (editing && editing.pin || "") : "",
-      field_23: order(checkedValues("efPhase"), (window.MINOWA_PHASES || []).map(function (x) { return x.value; })).join(", ")
+      field_23: order(checkedValues("efPhase"), (window.MINOWA_PHASES || []).map(function (x) { return x.value; })).join(", "),
+      field_24: order(checkedValues("efHazard"), (window.MINOWA_HAZARDS || []).map(function (x) { return x.value; })).join(", ")
     };
   }
   function changedFields() {
@@ -461,6 +470,7 @@
     var pl = placeOfItem(p);
     var orderedList = function (v, all) { var l = listOf(v); return all.filter(function (x) { return l.indexOf(x) >= 0; }).concat(l.filter(function (x) { return all.indexOf(x) < 0; })); };
     var phasesAll = (window.MINOWA_PHASES || []).map(function (x) { return x.value; });
+    var hazardsAll = (window.MINOWA_HAZARDS || []).map(function (x) { return x.value; });
     var isOther = p.place === "other" && isFinite(Number(p.lat)) && isFinite(Number(p.lon));
     var op = p.original_pin;   // 「その他」から固定の場所に直した作品の、もとのピン
     editing = {
@@ -471,7 +481,8 @@
         Body: String(p.Body || "").trim(),
         place: pl ? pl.id : String(p.place || ""),
         pin: isOther ? fmtPin(Number(p.lat), Number(p.lon)) : "",
-        field_23: orderedList(p.field_23, phasesAll).join(", ")
+        field_23: orderedList(p.field_23, phasesAll).join(", "),
+        field_24: orderedList(p.field_24, hazardsAll).join(", ")
       },
       startPin: op && window.minowaInArea(Number(op.lat), Number(op.lon)) ? fmtPin(Number(op.lat), Number(op.lon)) : ""
     };
@@ -489,8 +500,10 @@
     document.querySelectorAll('input[name="efPlace"]').forEach(function (i) { i.checked = i.value === editing.orig.place; });
     var ph = listOf(editing.orig.field_23);
     document.querySelectorAll('input[name="efPhase"]').forEach(function (i) { i.checked = ph.indexOf(i.value) >= 0; });
+    var hz = listOf(editing.orig.field_24);
+    document.querySelectorAll('input[name="efHazard"]').forEach(function (i) { i.checked = hz.indexOf(i.value) >= 0; });
     // 選択肢にない古い値があるときは知らせる（保存すると消える）
-    var unknown = ph.filter(function (x) { return phasesAll.indexOf(x) < 0; });
+    var unknown = ph.filter(function (x) { return phasesAll.indexOf(x) < 0; }).concat(hz.filter(function (x) { return hazardsAll.indexOf(x) < 0; }));
     showEditError(unknown.length ? "選択肢にない値が入っています：" + unknown.join("、") + "（保存すると消えます）" : "");
     saving = false;
     $("editOverlay").hidden = false;
@@ -528,6 +541,7 @@
       case "invalid penname": return "ペンネームが空です。ペンネームを入れてください。";
       case "invalid place": return "場所を6つの中から選んでください。";
       case "invalid phase": return "いつの行動かを選び直してください。";
+      case "invalid hazard": return "作品にする災害を選び直してください。";
       case "pin required": return "「その他」のときは、地図をタップしてピンを置いてください。";
       case "location out of area": return "ピンは赤い線（綱島・日吉の周り）の中に置いてください。";
       case "too long": return "「" + (FIELD_NAMES[field] || field) + "」が長すぎます（" + max + "文字まで）。";
@@ -541,6 +555,7 @@
     if (!v) return '<span class="dlg-none">（なし）</span>';
     if (k === "place") { var pl = window.minowaPlace(v); return esc(pl ? pl.plain : v); }
     if (k === "field_23") return esc(phaseName(v));
+    if (k === "field_24") return esc(hazardName(v));
     if (k === "pin") { var pp = parsePin(v); return pp ? esc("北緯 " + pp.lat + "・東経 " + pp.lon) : esc(v); }
     return esc(v);
   }

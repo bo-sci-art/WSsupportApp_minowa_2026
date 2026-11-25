@@ -1,11 +1,13 @@
 /**
- * S1 作品にする場所を選ぶ（箕輪小版）
+ * S1 作品にする場所と災害を選ぶ（箕輪小版）
  * - 6つ（固定5か所＋「その他」）から1つ選ぶ。固定5か所の座標は common/places.js
  * - 「その他」：地図をタップしてピンを置く（綱島・日吉周辺の枠の中だけ）→「ここでいいかな？」で確かめる
  *   保存するのは緯度経度だけ（場所名は入力させない）
- * - 保存先：localStorage.minowa_hazardMapLog = { location:{ lat, lon, place, name } }
+ * - 作品にする災害：計画シートの8つ（common/places.js の MINOWA_HAZARDS）から、いくつでも選ぶ（1つ以上）
+ *   ハザードマップは画面では見せない（黒板に貼った地図と、配った地図を見て選ぶ）
+ * - 保存先：localStorage.minowa_hazardMapLog = { location:{ lat, lon, place, name }, hazards:[正式名…] }
  *   place は apita / shintsunashima / conforte / hiyoshinooka / pump / other
- *   （キーの名前は元のアプリのまま。ハザードマップの選択はなくした）
+ *   hazards は既存アプリ（大人版）と同じ正式名（例：'洪水（外水氾濫）'）
  */
 
 const CONFIG = {
@@ -28,11 +30,13 @@ function applyEditMode(nextBtn, backBtn) {
 // place：選んだもの（固定5か所の id か 'other'）
 // otherPin：「その他」で「ここにする」を押したピンの位置 { lat, lon }
 // pendingPin：タップしたが、まだ「ここにする」を押していない位置
-const state = { place: null, otherPin: null, pendingPin: null, map: null, markers: {}, otherMarker: null, confirmMap: null };
+const state = { place: null, hazards: new Set(), otherPin: null, pendingPin: null, map: null, markers: {}, otherMarker: null, confirmMap: null };
 
 const el = {
     placeButtons: document.getElementById('placeButtons'),
     locationValidation: document.getElementById('locationValidation'),
+    hazardSelection: document.getElementById('hazardSelection'),
+    hazardValidation: document.getElementById('hazardValidation'),
     mapInstruction: document.getElementById('mapInstruction'),
     mapToast: document.getElementById('mapToast'),
     pinConfirm: document.getElementById('pinConfirm'),
@@ -49,6 +53,8 @@ const round6 = v => Math.round(v * 1e6) / 1e6;
 function loadSaved() {
     try {
         const d = JSON.parse(localStorage.getItem(CONFIG.storageKey) || '{}');
+        const known = window.MINOWA_HAZARDS.map(h => h.value);
+        (Array.isArray(d.hazards) ? d.hazards : []).forEach(h => { if (known.includes(h)) state.hazards.add(h); });
         const loc = d.location;
         if (!loc || !window.minowaPlace(loc.place)) return;
         state.place = loc.place;
@@ -63,11 +69,43 @@ function save() {
     if (p && !p.isOther) location = { lat: p.lat, lon: p.lon, place: p.id, name: p.plain };
     else if (p && p.isOther && state.otherPin) location = { lat: state.otherPin.lat, lon: state.otherPin.lon, place: 'other', name: p.plain };
     // 「その他」を選んだがまだピンを決めていないときは、場所を空にしておく（確認画面で「まだ選んでいません」になる）
-    localStorage.setItem(CONFIG.storageKey, JSON.stringify({ location }));
+    // 災害は選択肢の順にならべて保存する
+    const hazards = window.MINOWA_HAZARDS.map(h => h.value).filter(v => state.hazards.has(v));
+    localStorage.setItem(CONFIG.storageKey, JSON.stringify({ location, hazards }));
 }
-function isReady() {
+function placeReady() {
     const p = window.minowaPlace(state.place);
     return !!p && (!p.isOther || !!state.otherPin);
+}
+function isReady() { return placeReady() && state.hazards.size > 0; }
+
+// ---------- 作品にする災害（いくつでも） ----------
+function renderHazards() {
+    el.hazardSelection.innerHTML = '';
+    window.MINOWA_HAZARDS.forEach((h, i) => {
+        const div = document.createElement('div');
+        div.className = 'hazard-option' + (state.hazards.has(h.value) ? ' selected' : '');
+        div.dataset.hazard = h.value;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.id = 'hazard-' + i; cb.value = h.value; cb.checked = state.hazards.has(h.value);
+        const label = document.createElement('label');
+        label.htmlFor = cb.id;
+        label.innerHTML = rb(h.label);
+        div.appendChild(cb); div.appendChild(label);
+        // 文字やチェックボックスを押したときはブラウザが切りかえる（二重に切りかえないように）
+        div.addEventListener('click', e => {
+            if (e.target === cb || e.target.closest('label')) return;
+            cb.checked = !cb.checked; toggleHazard(h.value, cb.checked, div);
+        });
+        cb.addEventListener('change', () => toggleHazard(h.value, cb.checked, div));
+        el.hazardSelection.appendChild(div);
+    });
+}
+function toggleHazard(v, on, div) {
+    if (on) state.hazards.add(v); else state.hazards.delete(v);
+    div.classList.toggle('selected', on);
+    if (state.hazards.size) el.hazardValidation.style.display = 'none';
+    save(); updateNext();
 }
 
 // ---------- 場所のボタン（6つ） ----------
@@ -214,11 +252,19 @@ function showToast(html) {
 function hideToast() { el.mapToast.hidden = true; }
 
 // ---------- つぎへ・もどる ----------
-function updateNext() { el.nextBtn.disabled = !isReady(); }
+// 場所と災害（1つ以上）がそろうまで「つぎへ」は押せない
+function updateNext() {
+    el.nextBtn.disabled = !isReady();
+    // 場所を決めたのに災害がまだのときは、何が足りないかを出す
+    if (placeReady() && !state.hazards.size) el.hazardValidation.style.display = 'block';
+}
 function handleNext() {
     if (!isReady()) {
-        el.locationValidation.innerHTML = rb(state.place === 'other' ? '⚠️ 地図{ちず}をタップして、ピンを置{お}いてください' : '⚠️ 場所{ばしょ}を選{えら}んでください');
-        el.locationValidation.style.display = 'block';
+        if (!placeReady()) {
+            el.locationValidation.innerHTML = rb(state.place === 'other' ? '⚠️ 地図{ちず}をタップして、ピンを置{お}いてください' : '⚠️ 場所{ばしょ}を選{えら}んでください');
+            el.locationValidation.style.display = 'block';
+        }
+        if (!state.hazards.size) el.hazardValidation.style.display = 'block';
         return;
     }
     save();
@@ -228,6 +274,7 @@ function handleNext() {
 document.addEventListener('DOMContentLoaded', () => {
     loadSaved();
     renderPlaces();
+    renderHazards();
     initMap();
     updateNext();
     applyEditMode(el.nextBtn, el.backBtn);
